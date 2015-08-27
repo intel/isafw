@@ -55,21 +55,21 @@ class TestLAPlugin(unittest.TestCase):
         pkg = isafw.ISA_package()
         pkg.name = "bash"
         pkg.version = "4.3"
-	    pkg.licenses = ["Apache-1.1"]
+        pkg.licenses = ["Apache-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
         badLicExist = os.path.isfile (reportdir + "/license_report")	
-	    # if no bad licenses exist no report is created        
-	    self.assertFalse(badLicExist)
+        # if no bad licenses exist no report is created        
+        self.assertFalse(badLicExist)
 
     def test_package_with_licenses_NotOK(self):
         pkg = isafw.ISA_package()
         pkg.name = "bash"
         pkg.version = "4.3"
-	    pkg.licenses = ["BadLicense-1.1"]
-	    self.imageSecurityAnalyser.process_package(pkg)		
-	    with open(reportdir + "/license_report", 'r') as freport:
+        pkg.licenses = ["BadLicense-1.1"]
+        self.imageSecurityAnalyser.process_package(pkg)		
+            with open(reportdir + "/license_report", 'r') as freport:
             output = freport.readline()
-	    # if bad licenses exist a report listing them is created
+        # if bad licenses exist a report listing them is created
         self.assertEqual(output, 
                         "bash: BadLicense-1.1\n",
                         'Output does not match') 
