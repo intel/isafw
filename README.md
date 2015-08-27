@@ -35,6 +35,17 @@ Currently supported plugins
  - **ISA_kca_plugin**. Plugin for analysing security aspects of kernel configuration.
  - **ISA_fsa_plugin**. A basic plugin for analysing image filesystem.
 
+Build system integration status
+------------------------------
+
+The OE layer for isafw can be found at
+
+    http://layers.openembedded.org/layerindex/branch/master/layer/meta-security-isafw/
+
+Github repository is
+
+    https://github.com/01org/meta-security-isafw
+
 License
 -------
 
