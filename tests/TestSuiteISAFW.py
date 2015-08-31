@@ -31,7 +31,7 @@ from CVEPluginTestCase import *
 from KCAPluginTestCase import *
 from CFAPluginTestCase import *
 from FSAPluginTestCase import *
-from LAPluginTestCase  import *
+from LACPluginTestCase import *
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestCVEPlugin)
 unittest.TextTestRunner(verbosity=2).run(suite)
@@ -45,5 +45,5 @@ unittest.TextTestRunner(verbosity=2).run(suite)
 suite = unittest.TestLoader().loadTestsFromTestCase(TestFSAPlugin)
 unittest.TextTestRunner(verbosity=2).run(suite)
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestLAPlugin) 
+suite = unittest.TestLoader().loadTestsFromTestCase(TestLACPlugin) 
 unittest.TextTestRunner(verbosity=2).run(suite)

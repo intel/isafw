@@ -1,5 +1,5 @@
 #
-# LAPluginTestCase.py -  Test cases for License Checker plugin, part of ISA FW
+# LACPluginTestCase.py -  Test cases for License Checker plugin, part of ISA FW
 #
 # Copyright (c) 2015, Intel Corporation
 #
@@ -35,7 +35,7 @@ import os
 
 reportdir = "./la_plugin/output"
 
-class TestLAPlugin(unittest.TestCase):
+class TestLACPlugin(unittest.TestCase):
 
     def setUp(self):
         # cleaning up the report dir and creating it if needed
@@ -58,7 +58,7 @@ class TestLAPlugin(unittest.TestCase):
         pkg.licenses = ["Apache-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
         badLicExist = os.path.isfile (reportdir + "/license_report")	
-        # if no bad licenses exist no report is created        
+        # if no bad licenses exist no report is created
         self.assertFalse(badLicExist)
 
     def test_package_with_licenses_NotOK(self):
@@ -67,7 +67,7 @@ class TestLAPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.licenses = ["BadLicense-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)		
-            with open(reportdir + "/license_report", 'r') as freport:
+        with open(reportdir + "/license_report", 'r') as freport:
             output = freport.readline()
         # if bad licenses exist a report listing them is created
         self.assertEqual(output, 
