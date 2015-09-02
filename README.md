@@ -36,7 +36,7 @@ Currently supported plugins
  - **ISA_fsa_plugin**. A basic plugin for analysing image filesystem.
 
 Build system integration status
-------------------------------
+-------------------------------
 
 The OE layer for isafw can be found at
 
@@ -45,6 +45,14 @@ The OE layer for isafw can be found at
 Github repository is
 
     https://github.com/01org/meta-security-isafw
+
+
+Test Suite
+----------
+
+Please run the whole test suite with root priviledges in order for the test setup to work:
+
+    sudo python TestSuiteISAFW.py
 
 License
 -------

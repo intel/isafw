@@ -38,6 +38,8 @@ import stat
 
 reportdir = "./fsa_plugin/output"
 fsroot_path = "./fsa_plugin/data/rootfs"
+unpack_path = "./fsa_plugin/data/"
+ar_path = "./fsa_plugin/data/rootfs.tar.gz"
 ref_fsa_problems_output = "./fsa_plugin/data/ref_fsa_problems_report_TestImage"
 ref_fsa_full_output = "./fsa_plugin/data/ref_fsa_full_report_TestImage"
 
@@ -54,6 +56,10 @@ class TestFSAPlugin(unittest.TestCase):
             proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
             proxy = os.environ['https_proxy']
+        # unpack the rootfs for the test
+        ar = tarfile.open(ar_path)
+        ar.extractall(unpack_path)
+        ar.close()
         # setup the permissions for the test, need to be root
         self.perms_setup(fsroot_path)
         # creating ISA FW class
