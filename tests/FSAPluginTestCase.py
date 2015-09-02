@@ -34,6 +34,7 @@ import shutil
 import os
 import filecmp
 import tarfile
+import stat
 
 reportdir = "./fsa_plugin/output"
 fsroot_path = "./fsa_plugin/data/rootfs"
@@ -53,6 +54,8 @@ class TestFSAPlugin(unittest.TestCase):
             proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
             proxy = os.environ['https_proxy']
+        # setup the permissions for the test, need to be root
+        self.perms_setup(fsroot_path)
         # creating ISA FW class
         self.imageSecurityAnalyser = isafw.ISA(proxy, reportdir)
         fs = isafw.ISA_filesystem()
@@ -67,6 +70,26 @@ class TestFSAPlugin(unittest.TestCase):
     def test_fsa_full_report(self):
         self.assertTrue(filecmp.cmp(reportdir + "/fsa_full_report_TestImage", ref_fsa_full_output),
                          'Output does not match')
+    def perms_setup(self, fsroot_path):
+        os.chmod(fsroot_path + "/file1", 0777)
+        os.chown(fsroot_path + "/file2", 0, 0)
+        os.chmod(fsroot_path + "/file2", 4775)
+        os.chown(fsroot_path + "/file3", 0, 0)
+        os.chmod(fsroot_path + "/file3", 0775)
+        os.chmod(fsroot_path + "/file3", stat.S_ISGID)
+        os.chmod(fsroot_path + "/file4", 2775)
+        os.chmod(fsroot_path + "/file5", 0664)
+        os.chmod(fsroot_path + "/file6", 0664)
+        os.chmod(fsroot_path + "/file7", 0664)
+        os.chmod(fsroot_path + "/file8", 0664)
+        os.chmod(fsroot_path + "/file9", 0664)
+        os.chmod(fsroot_path + "/file10", 0557)
+        os.chmod(fsroot_path + "/file11", 0664)
+        os.chmod(fsroot_path + "/dir1", 0777)
+        os.chmod(fsroot_path + "/dir1",  stat.S_ISVTX)
+        os.chmod(fsroot_path + "/dir2", 0777)
+        os.chown(fsroot_path + "/dir2/file22", 0, 0)
+        os.chmod(fsroot_path + "/dir2/file22", 4664)
  
 if __name__ == '__main__':
     unittest.main()

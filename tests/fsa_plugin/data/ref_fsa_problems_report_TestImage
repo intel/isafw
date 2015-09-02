@@ -2,17 +2,17 @@ Report for image: TestImage
 With rootfs location at ./fsa_plugin/data/rootfs
 
 Files with SETUID bit set:
-/file2
-/dir2/file22
+/file4
 
 
 Files with SETGID bit set:
 /file3
-/file4
 
 
 World-writable files:
 /file1
+/file2
+/file4
 /file10
 
 
