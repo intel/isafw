@@ -15,4 +15,4 @@ File: /file10 mode: 0100557 uid: 1000 gid: 1000
 File: /dir2 mode: 040777 uid: 1000 gid: 1000
 File: /dir2/file22 mode: 0101070 uid: 0 gid: 0
 File: /dir1 mode: 041000 uid: 1000 gid: 1000
-File: /dir1/file12 mode: 0100644 uid: 0 gid: 0
+File: /dir1/file12 mode: 0100664 uid: 1000 gid: 1000
