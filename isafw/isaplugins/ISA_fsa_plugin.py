@@ -27,35 +27,38 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 from stat import *
+from lxml import etree
 
 FSAnalyzer = None
 full_report = "/fsa_full_report_"
 problems_report = "/fsa_problems_report_"
-log = "/internal/isafw_fsalog"
+log = "/isafw_fsalog"
 
-class ISA_FSA():    
+class ISA_FSChecker():    
     initialized = False
-    def __init__(self, proxy, reportdir):
-        self.proxy = proxy
-        self.reportdir = reportdir
+    def __init__(self, ISA_config):
+        self.proxy = ISA_config.proxy
+        self.reportdir = ISA_config.reportdir
+        self.logdir = ISA_config.logdir
+        self.timestamp = ISA_config.timestamp
         self.initialized = True
         self.setuid_files = []
         self.setgid_files = []
         self.ww_files = []
         self.no_sticky_bit_ww_dirs = []
-        print("Plugin ISA_FSA initialized!")
-        with open(self.reportdir + log, 'w') as flog:
-            flog.write("Plugin ISA_FilesystemAnalyser initialized!\n")
+        print("Plugin ISA_FSChecker initialized!")
+        with open(self.logdir + log, 'w') as flog:
+            flog.write("Plugin ISA_FSChecker initialized!\n")
 
     def process_filesystem(self, ISA_filesystem):
         if (self.initialized == True):
             if (ISA_filesystem.img_name and ISA_filesystem.path_to_fs):
-                with open(self.reportdir + log, 'a') as flog:
+                with open(self.logdir + log, 'a') as flog:
                     flog.write("Analyzing filesystem at: " + ISA_filesystem.path_to_fs + " for the image: " + ISA_filesystem.img_name)
                 self.files = self.find_fsobjects(ISA_filesystem.path_to_fs)
-                with open(self.reportdir + log, 'a') as flog:
+                with open(self.logdir + log, 'a') as flog:
                     flog.write("\n\nFilelist is: " + str(self.files))
-                with open(self.reportdir + full_report + ISA_filesystem.img_name, 'w') as ffull_report:
+                with open(self.reportdir + full_report + ISA_filesystem.img_name + "_" + self.timestamp, 'w') as ffull_report:
                     ffull_report.write("Report for image: " + ISA_filesystem.img_name + '\n')
                     ffull_report.write("With rootfs location at " + ISA_filesystem.path_to_fs + "\n\n")
                     for f in self.files:
@@ -72,31 +75,62 @@ class ISA_FSA():
                                 self.no_sticky_bit_ww_dirs.append(i)
                             if (((st.st_mode&S_IFREG) == S_IFREG) and ((st.st_mode&S_IFLNK) != S_IFLNK)):        
                                 self.ww_files.append(i)
-                with open(self.reportdir + problems_report + ISA_filesystem.img_name, 'w') as fproblems_report:
-                    fproblems_report.write("Report for image: " + ISA_filesystem.img_name + '\n')
-                    fproblems_report.write("With rootfs location at " + ISA_filesystem.path_to_fs + "\n\n")
-                    fproblems_report.write("Files with SETUID bit set:\n")
-                    for item in self.setuid_files:
-                        fproblems_report.write(item + '\n')
-                    fproblems_report.write("\n\nFiles with SETGID bit set:\n")
-                    for item in self.setgid_files:
-                        fproblems_report.write(item + '\n')
-                    fproblems_report.write("\n\nWorld-writable files:\n")
-                    for item in self.ww_files:
-                        fproblems_report.write(item + '\n')
-                    fproblems_report.write("\n\nWorld-writable dirs with no sticky bit:\n")
-                    for item in self.no_sticky_bit_ww_dirs:
-                        fproblems_report.write(item + '\n')
+                self.write_problems_report(ISA_filesystem)
+                self.write_problems_report_xml(ISA_filesystem)
             else:
                 print("Mandatory arguments such as image name and path to the filesystem are not provided!")
                 print("Not performing the call.")
-                with open(self.reportdir + log, 'a') as flog:
+                with open(self.logdir + log, 'a') as flog:
                     flog.write("Mandatory arguments such as image name and path to the filesystem are not provided!\n")
                     flog.write("Not performing the call.\n")
         else:
             print("Plugin hasn't initialized! Not performing the call.")
-            with open(self.reportdir + log, 'a') as flog:
+            with open(self.logdir + log, 'a') as flog:
                 flog.write("Plugin hasn't initialized! Not performing the call.\n")
+
+    def write_problems_report(self, ISA_filesystem):
+        with open(self.reportdir + problems_report + ISA_filesystem.img_name + "_" + self.timestamp, 'w') as fproblems_report:
+            fproblems_report.write("Report for image: " + ISA_filesystem.img_name + '\n')
+            fproblems_report.write("With rootfs location at " + ISA_filesystem.path_to_fs + "\n\n")
+            fproblems_report.write("Files with SETUID bit set:\n")
+            for item in self.setuid_files:
+                fproblems_report.write(item + '\n')
+            fproblems_report.write("\n\nFiles with SETGID bit set:\n")
+            for item in self.setgid_files:
+                fproblems_report.write(item + '\n')
+            fproblems_report.write("\n\nWorld-writable files:\n")
+            for item in self.ww_files:
+                fproblems_report.write(item + '\n')
+            fproblems_report.write("\n\nWorld-writable dirs with no sticky bit:\n")
+            for item in self.no_sticky_bit_ww_dirs:
+                fproblems_report.write(item + '\n')
+
+    def write_problems_report_xml(self, ISA_filesystem):
+        root = etree.Element('testsuite', name = 'FSA_Plugin', tests = '4')
+        tcase1 = etree.SubElement(root, 'testcase', classname = 'ISA_FSChecker', name = 'Files_with_SETUID_bit_set')
+        if self.setuid_files:
+            failrs1 = etree.SubElement(tcase1, 'failure', msg = 'Non-compliant files found', type = 'violation')                    
+            for item in self.setuid_files:
+                etree.SubElement(failrs1, 'value').text = item
+        tcase2 = etree.SubElement(root, 'testacase', classname = 'ISA_FSChecker', name = 'Files_with_SETGID_bit_set')
+        if self.setgid_files:
+            failrs2 = etree.SubElement(tcase2, 'failure', msg = 'Non-compliant files found', type = 'violation')                    
+            for item in self.setgid_files:
+                etree.SubElement(failrs2, 'value').text = item
+        sec3 = etree.SubElement(root, 'testase', classname = 'ISA_FSChecker', name = 'World-writable_files')
+        if self.ww_files:
+            failrs3 = etree.SubElement(tcase3, 'failure', msg = 'Non-compliant files found', type = 'violation')
+            for item in self.ww_files:
+                etree.SubElement(failrs3, 'value').text = item
+        sec4 = etree.SubElement(root, 'testcase', classname = 'ISA_FSChecker', name = 'World-writable_dirs_with_no_sticky_bit')
+        if self.no_sticky_bit_ww_dirs:
+            failrs4 = etree.SubElement(tcase4, 'failure', msg = 'Non-compliant directories found', type = 'violation')            
+            for item in self.no_sticky_bit_ww_dirs:
+                etree.SubElement(failrs4, 'value').text = item
+        print (etree.tostring(root, pretty_print = True))
+        tree = etree.ElementTree(root)
+        output = self.reportdir + problems_report + ISA_filesystem.img_name + "_" + self.timestamp + '.xml' 
+        tree.write(output, encoding = 'UTF-8', pretty_print = True, xml_declaration = True)
 
     def find_fsobjects(self, init_path):
         list_of_files = []
@@ -109,11 +143,11 @@ class ISA_FSA():
 
 #======== supported callbacks from ISA =============#
 
-def init(proxy, reportdir):
+def init(ISA_config):
     global FSAnalyzer 
-    FSAnalyzer = ISA_FSA(proxy, reportdir)
+    FSAnalyzer = ISA_FSChecker(ISA_config)
 def getPluginName():
-    return "filesystem_check"
+    return "ISA_FSChecker"
 def process_filesystem(ISA_filesystem):
     global FSAnalyzer 
     return FSAnalyzer.process_filesystem(ISA_filesystem)

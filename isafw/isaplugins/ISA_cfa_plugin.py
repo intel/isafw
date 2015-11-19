@@ -32,11 +32,12 @@ import os
 import stat
 from re import compile
 from re import sub
+from lxml import etree
 
 CFChecker = None
 full_report = "/cfa_full_report_"
 problems_report = "/cfa_problems_report_"
-log = "/internal/isafw_cfalog"
+log = "/isafw_cfalog"
 
 class ISA_CFChecker():    
     initialized = False
@@ -45,65 +46,101 @@ class ISA_CFChecker():
     no_pie = []
     no_nx = []
 
-    def __init__(self, proxy, reportdir):
-        self.proxy = proxy
-        self.reportdir = reportdir
+    def __init__(self, ISA_config):
+        self.proxy = ISA_config.proxy
+        self.reportdir = ISA_config.reportdir
+        self.logdir = ISA_config.logdir
+        self.timestamp = ISA_config.timestamp
         # check that checksec is installed
         rc = subprocess.call(["which", "checksec.sh"])
         if rc == 0:
             self.initialized = True
             print("Plugin ISA_CFChecker initialized!")
-            with open(self.reportdir + log, 'w') as flog:
+            with open(self.logdir + log, 'w') as flog:
                 flog.write("\nPlugin ISA_CFChecker initialized!\n")
         else:
             print("checksec tool is missing!")
             print("Please install it from http://www.trapkit.de/tools/checksec.html")
-            with open(self.reportdir + log, 'w') as flog:
+            with open(self.logdir + log, 'w') as flog:
                 flog.write("checksec tool is missing!\n")
                 flog.write("Please install it from http://www.trapkit.de/tools/checksec.html\n")
 
     def process_filesystem(self, ISA_filesystem):
         if (self.initialized == True):
             if (ISA_filesystem.img_name and ISA_filesystem.path_to_fs):
-                with open(self.reportdir + log, 'a') as flog:
+                with open(self.logdir + log, 'a') as flog:
                     flog.write("\n\nFilesystem path is: " + ISA_filesystem.path_to_fs)
-                with open(self.reportdir + full_report + ISA_filesystem.img_name, 'w') as ffull_report:
+                with open(self.reportdir + full_report + ISA_filesystem.img_name + "_" + self.timestamp, 'w') as ffull_report:
                     ffull_report.write("Security-relevant flags for executables for image: " + ISA_filesystem.img_name + '\n')
                     ffull_report.write("With rootfs location at " +  ISA_filesystem.path_to_fs + "\n\n")
                 self.files = self.find_files(ISA_filesystem.path_to_fs)
-                with open(self.reportdir + log, 'a') as flog:
+                with open(self.logdir + log, 'a') as flog:
                     flog.write("\n\nFile list is: " + str(self.files))
                 self.process_files(ISA_filesystem.img_name, ISA_filesystem.path_to_fs)
-                # write report
-                with open(self.reportdir + problems_report + ISA_filesystem.img_name, 'w') as fproblems_report:
-                    fproblems_report.write("Report for image: " + ISA_filesystem.img_name + '\n')
-                    fproblems_report.write("With rootfs location at " + ISA_filesystem.path_to_fs + "\n\n")
-                    fproblems_report.write("Files with no RELO:\n")
-                    for item in self.no_relo:
-                        item = item.replace(ISA_filesystem.path_to_fs, "")
-                        fproblems_report.write(item + '\n')
-                    fproblems_report.write("\n\nFiles with no canary:\n")
-                    for item in self.no_canary:
-                        item = item.replace(ISA_filesystem.path_to_fs, "")
-                        fproblems_report.write(item + '\n')
-                    fproblems_report.write("\n\nFiles with no PIE:\n")
-                    for item in self.no_pie:
-                        item = item.replace(ISA_filesystem.path_to_fs, "")
-                        fproblems_report.write(item + '\n')
-                    fproblems_report.write("\n\nFiles with no NX:\n")
-                    for item in self.no_nx:
-                        item = item.replace(ISA_filesystem.path_to_fs, "")
-                        fproblems_report.write(item + '\n')
+                self.write_report(ISA_filesystem)
+                self.write_report_xml(ISA_filesystem)
             else:
                 print("Mandatory arguments such as image name and path to the filesystem are not provided!")
                 print("Not performing the call.")
-                with open(self.reportdir + log, 'a') as flog:
+                with open(self.logdir + log, 'a') as flog:
                     flog.write("Mandatory arguments such as image name and path to the filesystem are not provided!\n")
                     flog.write("Not performing the call.\n")
         else:
             print("Plugin hasn't initialized! Not performing the call.")
-            with open(self.reportdir + log, 'a') as flog:
+            with open(self.logdir + log, 'a') as flog:
                 flog.write("Plugin hasn't initialized! Not performing the call.\n")
+
+    def write_report(self, ISA_filesystem):
+        with open(self.reportdir + problems_report + ISA_filesystem.img_name + "_" + self.timestamp, 'w') as fproblems_report:
+            fproblems_report.write("Report for image: " + ISA_filesystem.img_name + '\n')
+            fproblems_report.write("With rootfs location at " + ISA_filesystem.path_to_fs + "\n\n")
+            fproblems_report.write("Files with no RELO:\n")
+            for item in self.no_relo:
+                item = item.replace(ISA_filesystem.path_to_fs, "")
+                fproblems_report.write(item + '\n')
+            fproblems_report.write("\n\nFiles with no canary:\n")
+            for item in self.no_canary:
+                item = item.replace(ISA_filesystem.path_to_fs, "")
+                fproblems_report.write(item + '\n')
+            fproblems_report.write("\n\nFiles with no PIE:\n")
+            for item in self.no_pie:
+                item = item.replace(ISA_filesystem.path_to_fs, "")
+                fproblems_report.write(item + '\n')
+            fproblems_report.write("\n\nFiles with no NX:\n")
+            for item in self.no_nx:
+                item = item.replace(ISA_filesystem.path_to_fs, "")
+                fproblems_report.write(item + '\n')
+
+    def write_report_xml(self, ISA_filesystem):
+        root = etree.Element('testsuite', name='CFA_Plugin', tests='4')
+        tcase1 = etree.SubElement(root, 'testcase', classname='ISA_CFChecker', name='files_with_no_RELO')
+        if self.no_relo:
+            failrs1 = etree.SubElement(tcase1, 'failure', msg='Non-compliant files found', type='violation')
+            for item in self.no_relo:
+                item = item.replace(ISA_filesystem.path_to_fs, "")
+                etree.SubElement(failrs1, 'value').text = item
+        tcase2 = etree.SubElement(root, 'testcase', classname='ISA_CFChecker', name='files_with_no_canary')
+        if self.no_canary: 
+            failrs2 = etree.SubElement(tcase2, 'failure', msg='Non-compliant files found', type='violation')
+            for item in self.no_canary:
+                item = item.replace(ISA_filesystem.path_to_fs, "")
+                etree.SubElement(failrs2, 'value').text = item
+        tcase3 = etree.SubElement(root, 'testcase', classname='ISA_CFChecker', name='files_with_no_PIE')
+        if self.no_pie: 
+            failrs3 = etree.SubElement(tcase3, 'failure', msg='Non-compliant files found', type='violation')
+            for item in self.no_pie:
+                item = item.replace(ISA_filesystem.path_to_fs, "")
+                etree.SubElement(failrs3, 'value').text = item                    
+        tcase4 = etree.SubElement(root, 'testcase', classname='ISA_CFChecker', name='files_with_no_NX')
+        if self.no_nx: 
+            failrs4 = etree.SubElement(tcase4, 'failure', msg='Non-compliant files found', type='violation')
+            for item in self.no_nx:
+                item = item.replace(ISA_filesystem.path_to_fs, "")
+                etree.SubElement(failrs4, 'value').text = item
+        print (etree.tostring(root, pretty_print=True))
+        tree = etree.ElementTree(root)
+        output = self.reportdir + problems_report + ISA_filesystem.img_name + "_" + self.timestamp + '.xml' 
+        tree.write(output, encoding= 'UTF-8', pretty_print=True, xml_declaration=True)
 
     def find_files(self, init_path):
         list_of_files = []
@@ -162,7 +199,7 @@ class ISA_CFChecker():
                     result = subprocess.check_output(cmd).decode("utf-8")
                 except:
                     print("Not able to decode mime type", sys.exc_info())
-                    with open(self.reportdir + log, 'a') as flog:
+                    with open(self.logdir + log, 'a') as flog:
                         flog.write("Not able to decode mime type" + sys.exc_info())
                     continue
                 type = result.split()[-1]
@@ -174,7 +211,7 @@ class ISA_CFChecker():
                         result = subprocess.check_output(cmd).decode("utf-8")
                     except:
                         print("Not able to decode mime type", sys.exc_info())
-                        with open(self.reportdir + log, 'a') as flog:
+                        with open(self.logdir + log, 'a') as flog:
                             flog.write("Not able to decode mime type" + sys.exc_info())
                         continue
                     type = result.split()[-1]
@@ -196,7 +233,7 @@ class ISA_CFChecker():
                         sec_field = "File is pdf"
                     else:
                         sec_field = self.get_security_flags(real_file)
-                        with open(self.reportdir + full_report + img_name, 'a') as ffull_report:
+                        with open(self.reportdir + full_report + img_name + "_" + self.timestamp, 'a') as ffull_report:
                             real_file = real_file.replace(path_to_fs, "")
                             ffull_report.write(real_file + ": ")
                             for s in sec_field:
@@ -208,11 +245,11 @@ class ISA_CFChecker():
 
 #======== supported callbacks from ISA =============#
 
-def init(proxy, reportdir):
+def init(ISA_config):
     global CFChecker 
-    CFChecker = ISA_CFChecker(proxy, reportdir)
+    CFChecker = ISA_CFChecker(ISA_config)
 def getPluginName():
-    return "compile_flag_check"
+    return "ISA_CFChecker"
 def process_filesystem(ISA_filesystem):
     global CFChecker 
     return CFChecker.process_filesystem(ISA_filesystem)
