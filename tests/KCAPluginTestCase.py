@@ -33,39 +33,78 @@ import isafw
 import shutil
 import os
 import filecmp
+from datetime import datetime
 
-reportdir = "./kca_plugin/output"
 kernel_conf = "./kca_plugin/data/config"
 ref_kca_full_output = "./kca_plugin/data/ref_kca_full_report_TestImage"
 ref_kca_problems_output = "./kca_plugin/data/ref_kca_problems_report_TestImage"
+isafw_conf = isafw.ISA_config()
+isafw_conf.reportdir = "./kca_plugin/output"
 
 class TestKCAPlugin(unittest.TestCase):
 
     def setUp(self):
         # cleaning up the report dir and creating it if needed
-        if os.path.exists(os.path.dirname(reportdir+"/internal/test")):
-            shutil.rmtree(reportdir)
-        os.makedirs(os.path.dirname(reportdir+"/internal/test"))
+        if os.path.exists(os.path.dirname(isafw_conf.reportdir+"/internal/test")):
+            shutil.rmtree(isafw_conf.reportdir)
+        os.makedirs(os.path.dirname(isafw_conf.reportdir+"/internal/test"))
+        # setting the timestamp
+        isafw_conf.timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         # fetching proxy info
-        proxy = ""
+        isafw_conf.proxy = ""
         if "http_proxy" in os.environ:
-            proxy = os.environ['http_proxy']
+            isafw_conf.proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
-            proxy = os.environ['https_proxy']
+            isafw_conf.proxy = os.environ['https_proxy']
         # creating ISA FW class
-        self.imageSecurityAnalyser = isafw.ISA(proxy, reportdir)
+        self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         kernel = isafw.ISA_kernel()
         kernel.img_name = "TestImage"
         kernel.path_to_config = kernel_conf
         self.imageSecurityAnalyser.process_kernel(kernel)
 
+    def sortFile(self,file):
+        f = open(file, "r")
+        lines = [line for line in f if line.strip()]
+        f.close()
+        lines.sort()
+        f = open("/home/temporalSorted", "w")
+        f.writelines(lines)
+        f.close()       
+
     def test_kca_full_report(self):
-        self.assertTrue(filecmp.cmp(reportdir + "/kca_full_report_TestImage", ref_kca_full_output),
-                         'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/kca_full_report_TestImage_" + isafw_conf.timestamp)
+        f = open("/home/temporalSorted", "r")        
+        lines = f.readlines()
+        f.close()
+        aux = open("/home/sortedKCAFull", "w")
+        aux.writelines(lines)
+        aux.close()
+        self.sortFile(ref_kca_full_output)
+        f1 = open("/home/temporalSorted", "r")
+        lines = f1.readlines()
+        f1.close()
+        aux1 = open("/home/sortedRefKCAFull", "w")
+        aux1.writelines(lines)
+        aux1.close()
+        self.assertTrue(filecmp.cmp('/home/sortedKCAFull','/home/sortedRefKCAFull'),'Output does not match')
 
     def test_kca_problems_report(self):
-        self.assertTrue(filecmp.cmp(reportdir + "/kca_problems_report_TestImage", ref_kca_problems_output),
-                         'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/kca_problems_report_TestImage_" + isafw_conf.timestamp)
+        f = open("/home/temporalSorted", "r")        
+        lines = f.readlines()
+        f.close()
+        aux = open("/home/sortedKCAPbms", "w")
+        aux.writelines(lines)
+        aux.close()
+        self.sortFile(ref_kca_problems_output)
+        f1 = open("/home/temporalSorted", "r")
+        lines = f1.readlines()
+        f1.close()
+        aux1 = open("/home/sortedRefKCAPbms", "w")
+        aux1.writelines(lines)
+        aux1.close()
+        self.assertTrue(filecmp.cmp('/home/sortedKCAPbms','/home/sortedRefKCAPbms'),'Output does not match')
 
  
 if __name__ == '__main__':

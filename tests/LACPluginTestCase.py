@@ -32,24 +32,27 @@ sys.path.append("../isafw")
 import isafw
 import shutil
 import os
+from datetime import datetime
 
-reportdir = "./la_plugin/output"
+isafw_conf = isafw.ISA_config()
+isafw_conf.reportdir = "./la_plugin/output"
 
 class TestLACPlugin(unittest.TestCase):
-
     def setUp(self):
         # cleaning up the report dir and creating it if needed
-        if os.path.exists(os.path.dirname(reportdir+"/internal/test")):
-            shutil.rmtree(reportdir)
-        os.makedirs(os.path.dirname(reportdir+"/internal/test"))
+        if os.path.exists(os.path.dirname(isafw_conf.reportdir+"/internal/test")):
+            shutil.rmtree(isafw_conf.reportdir)
+        os.makedirs(os.path.dirname(isafw_conf.reportdir+"/internal/test"))
+        # setting the timestamp
+        isafw_conf.timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         # fetching proxy info
-        proxy = ""
+        isafw_conf.proxy = ""
         if "http_proxy" in os.environ:
-            proxy = os.environ['http_proxy']
+            isafw_conf.proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
-            proxy = os.environ['https_proxy']
+            isafw_conf.proxy = os.environ['https_proxy']
         # creating ISA FW class
-        self.imageSecurityAnalyser = isafw.ISA(proxy, reportdir)
+        self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
 
     def test_package_with_licenses_OK(self):
         pkg = isafw.ISA_package()
@@ -57,7 +60,7 @@ class TestLACPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.licenses = ["Apache-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
-        badLicExist = os.path.isfile (reportdir + "/license_report")	
+        badLicExist = os.path.isfile (isafw_conf.reportdir + "/license_report_" + isafw_conf.timestamp)	
         # if no bad licenses exist no report is created
         self.assertFalse(badLicExist)
 
@@ -67,9 +70,9 @@ class TestLACPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.licenses = ["BadLicense-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)		
-        with open(reportdir + "/license_report", 'r') as freport:
+        with open(isafw_conf.reportdir + "/license_report_" + isafw_conf.timestamp, 'r') as freport:
             output = freport.readline()
-        # if bad licenses exist a report listing them is created
+        # if bad licenses exist, a report listing them is created
         self.assertEqual(output, 
                         "bash: BadLicense-1.1\n",
                         'Output does not match') 

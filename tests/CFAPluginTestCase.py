@@ -34,31 +34,37 @@ import shutil
 import os
 import filecmp
 import tarfile
+from datetime import datetime
 
-reportdir = "./cfa_plugin/output"
+
 fsroot_tar = "./cfa_plugin/data/rootfs.tar.gz"
 fsroot_path = "./cfa_plugin/data/rootfs"
 ref_cfa_full_output = "./cfa_plugin/data/ref_cfa_full_report_TestImage"
 ref_cfa_problems_output = "./cfa_plugin/data/ref_cfa_problems_report_TestImage"
+isafw_conf = isafw.ISA_config()
+isafw_conf.reportdir = "./cfa_plugin/output"
+
 
 class TestCFAPlugin(unittest.TestCase):
 
     def setUp(self):
         # cleaning up the report dir and creating it if needed
-        if os.path.exists(os.path.dirname(reportdir+"/internal/test")):
-            shutil.rmtree(reportdir)
-        os.makedirs(os.path.dirname(reportdir+"/internal/test"))
+        if os.path.exists(os.path.dirname(isafw_conf.reportdir+"/internal/test")):
+            shutil.rmtree(isafw_conf.reportdir)
+        os.makedirs(os.path.dirname(isafw_conf.reportdir+"/internal/test"))
+        # setting the timestamp
+        isafw_conf.timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         # fetching proxy info
-        proxy = ""
+        isafw_conf.proxy = ""
         if "http_proxy" in os.environ:
-            proxy = os.environ['http_proxy']
+            isafw_conf.proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
-            proxy = os.environ['https_proxy']
+            isafw_conf.proxy = os.environ['https_proxy']
         # unpacking rootfs
         fsroot_arch = tarfile.open(name=fsroot_tar, mode='r')
-        fsroot_arch.extractall(path=fsroot_path, members=None)
+        fsroot_arch.extractall(path=fsroot_path, members=None)  
         # creating ISA FW class
-        self.imageSecurityAnalyser = isafw.ISA(proxy, reportdir)
+        self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         fs = isafw.ISA_filesystem()
         fs.img_name = "TestImage"
         fs.path_to_fs = fsroot_path
@@ -69,14 +75,48 @@ class TestCFAPlugin(unittest.TestCase):
             shutil.rmtree(fsroot_path)
         os.makedirs(os.path.dirname(fsroot_path+"/test"))
 
+    def sortFile(self,file):
+        f = open(file, "r")
+        lines = [line for line in f if line.strip()]
+        f.close()
+        lines.sort()
+        f = open("/home/temporalSorted", "w")
+        f.writelines(lines)
+        f.close()       
+
     def test_cfa_full_report(self):
-        self.assertTrue(filecmp.cmp(reportdir + "/cfa_full_report_TestImage", ref_cfa_full_output),
-                         'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/cfa_full_report_TestImage_" + isafw_conf.timestamp)
+        f = open("/home/temporalSorted", "r")        
+        lines = f.readlines()
+        f.close()
+        aux = open("/home/sortedCFAFull", "w")
+        aux.writelines(lines)
+        aux.close()
+        self.sortFile(ref_cfa_full_output)
+        f1 = open("/home/temporalSorted", "r")
+        lines = f1.readlines()
+        f1.close()
+        aux1 = open("/home/sortedRefCFAFull", "w")
+        aux1.writelines(lines)
+        aux1.close()
+        self.assertTrue(filecmp.cmp('/home/sortedCFAFull','/home/sortedRefCFAFull'),'Output does not match')
 
     def test_cfa_problems_report(self):
-        self.assertTrue(filecmp.cmp(reportdir + "/cfa_problems_report_TestImage", ref_cfa_problems_output),
-                         'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/cfa_problems_report_TestImage_" + isafw_conf.timestamp)
+        f = open("/home/temporalSorted", "r")        
+        lines = f.readlines()
+        f.close()
+        aux = open("/home/sortedCFAPbms", "w")
+        aux.writelines(lines)
+        aux.close()
+        self.sortFile(ref_cfa_problems_output)
+        f1 = open("/home/temporalSorted", "r")
+        lines = f1.readlines()
+        f1.close()
+        aux1 = open("/home/sortedRefCFAPbms", "w")
+        aux1.writelines(lines)
+        aux1.close()
+        self.assertTrue(filecmp.cmp('/home/sortedCFAPbms','/home/sortedRefCFAPbms'),'Output does not match')
 
- 
 if __name__ == '__main__':
     unittest.main()

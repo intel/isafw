@@ -35,27 +35,32 @@ import os
 import filecmp
 import tarfile
 import stat
+from datetime import datetime
 
-reportdir = "./fsa_plugin/output"
+
 fsroot_path = "./fsa_plugin/data/rootfs"
 unpack_path = "./fsa_plugin/data/"
 ar_path = "./fsa_plugin/data/rootfs.tar.gz"
 ref_fsa_problems_output = "./fsa_plugin/data/ref_fsa_problems_report_TestImage"
 ref_fsa_full_output = "./fsa_plugin/data/ref_fsa_full_report_TestImage"
+isafw_conf = isafw.ISA_config()
+isafw_conf.reportdir = "./fsa_plugin/output"
 
 class TestFSAPlugin(unittest.TestCase):
 
     def setUp(self):
         # cleaning up the report dir and creating it if needed
-        if os.path.exists(os.path.dirname(reportdir+"/internal/test")):
-            shutil.rmtree(reportdir)
-        os.makedirs(os.path.dirname(reportdir+"/internal/test"))
+        if os.path.exists(os.path.dirname(isafw_conf.reportdir+"/internal/test")):
+            shutil.rmtree(isafw_conf.reportdir)
+        os.makedirs(os.path.dirname(isafw_conf.reportdir+"/internal/test"))
+        # setting the timestamp
+        isafw_conf.timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         # fetching proxy info
-        proxy = ""
+        isafw_conf.proxy = ""
         if "http_proxy" in os.environ:
-            proxy = os.environ['http_proxy']
+            isafw_conf.proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
-            proxy = os.environ['https_proxy']
+            isafw_conf.proxy = os.environ['https_proxy']
         # unpack the rootfs for the test
         ar = tarfile.open(ar_path)
         ar.extractall(unpack_path)
@@ -63,19 +68,55 @@ class TestFSAPlugin(unittest.TestCase):
         # setup the permissions for the test, need to be root
         self.perms_setup(fsroot_path)
         # creating ISA FW class
-        self.imageSecurityAnalyser = isafw.ISA(proxy, reportdir)
+        self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         fs = isafw.ISA_filesystem()
         fs.img_name = "TestImage"
         fs.path_to_fs = fsroot_path
         self.imageSecurityAnalyser.process_filesystem(fs)
 
-    def test_fsa_problems_report(self):
-        self.assertTrue(filecmp.cmp(reportdir + "/fsa_problems_report_TestImage", ref_fsa_problems_output),
-                         'Output does not match')
+    def sortFile(self,file):
+        f = open(file, "r")
+        lines = [line for line in f if line.strip()]
+        f.close()
+        lines.sort()
+        f = open("/home/temporalSorted", "w")
+        f.writelines(lines)
+        f.close()       
 
     def test_fsa_full_report(self):
-        self.assertTrue(filecmp.cmp(reportdir + "/fsa_full_report_TestImage", ref_fsa_full_output),
-                         'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/fsa_full_report_TestImage_" + isafw_conf.timestamp)
+        f = open("/home/temporalSorted", "r")        
+        lines = f.readlines()
+        f.close()
+        aux = open("/home/sortedFSAFull", "w")
+        aux.writelines(lines)
+        aux.close()
+        self.sortFile(ref_fsa_full_output)
+        f1 = open("/home/temporalSorted", "r")
+        lines = f1.readlines()
+        f1.close()
+        aux1 = open("/home/sortedRefFSAFull", "w")
+        aux1.writelines(lines)
+        aux1.close()
+        self.assertTrue(filecmp.cmp('/home/sortedFSAFull','/home/sortedRefFSAFull'),'Output does not match')
+
+    def test_fsa_problems_report(self):
+        self.sortFile(isafw_conf.reportdir + "/fsa_problems_report_TestImage_" + isafw_conf.timestamp)
+        f = open("/home/temporalSorted", "r")        
+        lines = f.readlines()
+        f.close()
+        aux = open("/home/sortedFSAPbms", "w")
+        aux.writelines(lines)
+        aux.close()
+        self.sortFile(ref_fsa_problems_output)
+        f1 = open("/home/temporalSorted", "r")
+        lines = f1.readlines()
+        f1.close()
+        aux1 = open("/home/sortedRefFSAPbms", "w")
+        aux1.writelines(lines)
+        aux1.close()
+        self.assertTrue(filecmp.cmp('/home/sortedFSAPbms','/home/sortedRefFSAPbms'),'Output does not match')
+
     def perms_setup(self, fsroot_path):
         os.chmod(fsroot_path + "/file1", 0777)
         os.chown(fsroot_path + "/file2", 0, 0)
