@@ -36,14 +36,12 @@ import filecmp
 import tarfile
 from datetime import datetime
 
-
 fsroot_tar = "./cfa_plugin/data/rootfs.tar.gz"
 fsroot_path = "./cfa_plugin/data/rootfs"
 ref_cfa_full_output = "./cfa_plugin/data/ref_cfa_full_report_TestImage"
 ref_cfa_problems_output = "./cfa_plugin/data/ref_cfa_problems_report_TestImage"
 isafw_conf = isafw.ISA_config()
 isafw_conf.reportdir = "./cfa_plugin/output"
-
 
 class TestCFAPlugin(unittest.TestCase):
 
@@ -75,48 +73,26 @@ class TestCFAPlugin(unittest.TestCase):
             shutil.rmtree(fsroot_path)
         os.makedirs(os.path.dirname(fsroot_path+"/test"))
 
-    def sortFile(self,file):
+    def sortFile(self,file,fileName):
         f = open(file, "r")
         lines = [line for line in f if line.strip()]
         f.close()
         lines.sort()
-        f = open("/home/temporalSorted", "w")
-        f.writelines(lines)
-        f.close()       
+        aux = open(isafw_conf.reportdir + '/' + fileName, "w")
+        aux.writelines(lines)
+        aux.close()       
 
     def test_cfa_full_report(self):
-        self.sortFile(isafw_conf.reportdir + "/cfa_full_report_TestImage_" + isafw_conf.timestamp)
-        f = open("/home/temporalSorted", "r")        
-        lines = f.readlines()
-        f.close()
-        aux = open("/home/sortedCFAFull", "w")
-        aux.writelines(lines)
-        aux.close()
-        self.sortFile(ref_cfa_full_output)
-        f1 = open("/home/temporalSorted", "r")
-        lines = f1.readlines()
-        f1.close()
-        aux1 = open("/home/sortedRefCFAFull", "w")
-        aux1.writelines(lines)
-        aux1.close()
-        self.assertTrue(filecmp.cmp('/home/sortedCFAFull','/home/sortedRefCFAFull'),'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/cfa_full_report_TestImage_" + isafw_conf.timestamp,'sortedCFAFull')
+        self.sortFile(ref_cfa_full_output,'sortedRefCFAFull')
+        self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedCFAFull',isafw_conf.reportdir + '/sortedRefCFAFull'),
+                        'Output does not match')
 
     def test_cfa_problems_report(self):
-        self.sortFile(isafw_conf.reportdir + "/cfa_problems_report_TestImage_" + isafw_conf.timestamp)
-        f = open("/home/temporalSorted", "r")        
-        lines = f.readlines()
-        f.close()
-        aux = open("/home/sortedCFAPbms", "w")
-        aux.writelines(lines)
-        aux.close()
-        self.sortFile(ref_cfa_problems_output)
-        f1 = open("/home/temporalSorted", "r")
-        lines = f1.readlines()
-        f1.close()
-        aux1 = open("/home/sortedRefCFAPbms", "w")
-        aux1.writelines(lines)
-        aux1.close()
-        self.assertTrue(filecmp.cmp('/home/sortedCFAPbms','/home/sortedRefCFAPbms'),'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/cfa_problems_report_TestImage_" + isafw_conf.timestamp,'sortedCFAPbms')
+        self.sortFile(ref_cfa_problems_output,'sortedRefCFAPbms')
+        self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedCFAPbms',isafw_conf.reportdir + '/sortedRefCFAPbms'),
+                        'Output does not match')
 
 if __name__ == '__main__':
     unittest.main()

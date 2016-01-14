@@ -63,49 +63,26 @@ class TestKCAPlugin(unittest.TestCase):
         kernel.path_to_config = kernel_conf
         self.imageSecurityAnalyser.process_kernel(kernel)
 
-    def sortFile(self,file):
+    def sortFile(self,file,fileName):
         f = open(file, "r")
         lines = [line for line in f if line.strip()]
         f.close()
         lines.sort()
-        f = open("/home/temporalSorted", "w")
-        f.writelines(lines)
-        f.close()       
+        aux = open(isafw_conf.reportdir + '/' + fileName, "w")
+        aux.writelines(lines)
+        aux.close()       
 
     def test_kca_full_report(self):
-        self.sortFile(isafw_conf.reportdir + "/kca_full_report_TestImage_" + isafw_conf.timestamp)
-        f = open("/home/temporalSorted", "r")        
-        lines = f.readlines()
-        f.close()
-        aux = open("/home/sortedKCAFull", "w")
-        aux.writelines(lines)
-        aux.close()
-        self.sortFile(ref_kca_full_output)
-        f1 = open("/home/temporalSorted", "r")
-        lines = f1.readlines()
-        f1.close()
-        aux1 = open("/home/sortedRefKCAFull", "w")
-        aux1.writelines(lines)
-        aux1.close()
-        self.assertTrue(filecmp.cmp('/home/sortedKCAFull','/home/sortedRefKCAFull'),'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/kca_full_report_TestImage_" + isafw_conf.timestamp,'sortedKCAFull')
+        self.sortFile(ref_kca_full_output, 'sortedRefKCAFull')
+        self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedKCAFull',isafw_conf.reportdir + '/sortedRefKCAFull'),
+                        'Output does not match')
 
     def test_kca_problems_report(self):
-        self.sortFile(isafw_conf.reportdir + "/kca_problems_report_TestImage_" + isafw_conf.timestamp)
-        f = open("/home/temporalSorted", "r")        
-        lines = f.readlines()
-        f.close()
-        aux = open("/home/sortedKCAPbms", "w")
-        aux.writelines(lines)
-        aux.close()
-        self.sortFile(ref_kca_problems_output)
-        f1 = open("/home/temporalSorted", "r")
-        lines = f1.readlines()
-        f1.close()
-        aux1 = open("/home/sortedRefKCAPbms", "w")
-        aux1.writelines(lines)
-        aux1.close()
-        self.assertTrue(filecmp.cmp('/home/sortedKCAPbms','/home/sortedRefKCAPbms'),'Output does not match')
-
+        self.sortFile(isafw_conf.reportdir + "/kca_problems_report_TestImage_" + isafw_conf.timestamp,'sortedKCAPbms')
+        self.sortFile(ref_kca_problems_output,'sortedRefKCAPbms')
+        self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedKCAPbms',isafw_conf.reportdir + '/sortedRefKCAPbms'),
+                        'Output does not match')
  
 if __name__ == '__main__':
     unittest.main()

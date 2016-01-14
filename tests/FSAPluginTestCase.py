@@ -37,7 +37,6 @@ import tarfile
 import stat
 from datetime import datetime
 
-
 fsroot_path = "./fsa_plugin/data/rootfs"
 unpack_path = "./fsa_plugin/data/"
 ar_path = "./fsa_plugin/data/rootfs.tar.gz"
@@ -74,48 +73,26 @@ class TestFSAPlugin(unittest.TestCase):
         fs.path_to_fs = fsroot_path
         self.imageSecurityAnalyser.process_filesystem(fs)
 
-    def sortFile(self,file):
+    def sortFile(self,file,fileName):
         f = open(file, "r")
         lines = [line for line in f if line.strip()]
         f.close()
         lines.sort()
-        f = open("/home/temporalSorted", "w")
-        f.writelines(lines)
-        f.close()       
+        aux = open(isafw_conf.reportdir + '/' + fileName, "w")
+        aux.writelines(lines)
+        aux.close()
 
     def test_fsa_full_report(self):
-        self.sortFile(isafw_conf.reportdir + "/fsa_full_report_TestImage_" + isafw_conf.timestamp)
-        f = open("/home/temporalSorted", "r")        
-        lines = f.readlines()
-        f.close()
-        aux = open("/home/sortedFSAFull", "w")
-        aux.writelines(lines)
-        aux.close()
-        self.sortFile(ref_fsa_full_output)
-        f1 = open("/home/temporalSorted", "r")
-        lines = f1.readlines()
-        f1.close()
-        aux1 = open("/home/sortedRefFSAFull", "w")
-        aux1.writelines(lines)
-        aux1.close()
-        self.assertTrue(filecmp.cmp('/home/sortedFSAFull','/home/sortedRefFSAFull'),'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/fsa_full_report_TestImage_" + isafw_conf.timestamp,'sortedFSAFull')
+        self.sortFile(ref_fsa_full_output,'sortedRefFSAFull')
+        self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedFSAFull',isafw_conf.reportdir + '/sortedRefFSAFull'),
+                        'Output does not match')
 
     def test_fsa_problems_report(self):
-        self.sortFile(isafw_conf.reportdir + "/fsa_problems_report_TestImage_" + isafw_conf.timestamp)
-        f = open("/home/temporalSorted", "r")        
-        lines = f.readlines()
-        f.close()
-        aux = open("/home/sortedFSAPbms", "w")
-        aux.writelines(lines)
-        aux.close()
-        self.sortFile(ref_fsa_problems_output)
-        f1 = open("/home/temporalSorted", "r")
-        lines = f1.readlines()
-        f1.close()
-        aux1 = open("/home/sortedRefFSAPbms", "w")
-        aux1.writelines(lines)
-        aux1.close()
-        self.assertTrue(filecmp.cmp('/home/sortedFSAPbms','/home/sortedRefFSAPbms'),'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/fsa_problems_report_TestImage_" + isafw_conf.timestamp,'sortedFSAPbms')
+        self.sortFile(ref_fsa_problems_output,'sortedRefFSAPbms')
+        self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedFSAPbms',isafw_conf.reportdir + '/sortedRefFSAPbms'),
+                        'Output does not match')
 
     def perms_setup(self, fsroot_path):
         os.chmod(fsroot_path + "/file1", 0777)
