@@ -127,7 +127,7 @@ class ISA_FSChecker():
             failrs4 = etree.SubElement(tcase4, 'failure', msg = 'Non-compliant directories found', type = 'violation')            
             for item in self.no_sticky_bit_ww_dirs:
                 etree.SubElement(failrs4, 'value').text = item
-        print (etree.tostring(root, pretty_print = True))
+        # print (etree.tostring(root, pretty_print = True))
         tree = etree.ElementTree(root)
         output = self.reportdir + problems_report + ISA_filesystem.img_name + "_" + self.timestamp + '.xml' 
         tree.write(output, encoding = 'UTF-8', pretty_print = True, xml_declaration = True)

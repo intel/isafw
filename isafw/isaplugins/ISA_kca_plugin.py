@@ -345,7 +345,7 @@ class ISA_KernelChecker():
                 if valid == False :
                     msg4 = 'current="' + key + ':' + str(self.integrity_kco[key]) + '"' + ' recommended="' + key + ':' + str(self.integrity_kco_ref[key] + '"')
                     value4 = etree.SubElement(failrs4, 'value').text = msg4
-        print (etree.tostring(root, pretty_print = True))
+        # print (etree.tostring(root, pretty_print = True))
         tree = etree.ElementTree(root)
         output = self.reportdir + problemsreport + ISA_kernel.img_name + "_" + self.timestamp + '.xml' 
         tree.write(output, encoding = 'UTF-8', pretty_print = True, xml_declaration = True)
