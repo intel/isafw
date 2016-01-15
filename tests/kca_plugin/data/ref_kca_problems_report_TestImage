@@ -11,12 +11,12 @@ CONFIG_CC_STACKPROTECTOR : y
 Actual value:
 CONFIG_DEBUG_FS : y
 Recommended value:
-CONFIG_DEBUG_FS : n
+CONFIG_DEBUG_FS : not set
 
 Actual value:
 CONFIG_DEBUG_KERNEL : y
 Recommended value:
-CONFIG_DEBUG_KERNEL : n
+CONFIG_DEBUG_KERNEL : not set
 
 Actual value:
 CONFIG_DEBUG_STACKOVERFLOW : not set
@@ -31,12 +31,12 @@ CONFIG_DEFAULT_MMAP_MIN_ADDR : 65536
 Actual value:
 CONFIG_DEVKMEM : y
 Recommended value:
-CONFIG_DEVKMEM : n
+CONFIG_DEVKMEM : not set
 
 Actual value:
 CONFIG_IKCONFIG_PROC : y
 Recommended value:
-CONFIG_IKCONFIG_PROC : n
+CONFIG_IKCONFIG_PROC : not set
 
 Actual value:
 CONFIG_MODULE_SIG_FORCE : not set
@@ -46,7 +46,7 @@ CONFIG_MODULE_SIG_FORCE : y
 Actual value:
 CONFIG_PROC_KCORE : y
 Recommended value:
-CONFIG_PROC_KCORE : n
+CONFIG_PROC_KCORE : not set
 
 Actual value:
 CONFIG_RANDOMIZE_BASE : not set
@@ -71,14 +71,14 @@ CONFIG_STRICT_DEVMEM : y
 Actual value:
 CONFIG_X86_MSR : y
 Recommended value:
-CONFIG_X86_MSR : n
+CONFIG_X86_MSR : not set
 
 Key-related options that need improvement:
 
 Actual value:
 CONFIG_KEYS_DEBUG_PROC_KEYS : y
 Recommended value:
-CONFIG_KEYS_DEBUG_PROC_KEYS : n
+CONFIG_KEYS_DEBUG_PROC_KEYS : not set
 
 Security options that need improvement:
 
@@ -87,20 +87,28 @@ CONFIG_INTEL_TXT : not set
 Recommended value:
 CONFIG_INTEL_TXT : y
 
+Integrity options that need improvement:
+
 Actual value:
 CONFIG_LSM_MMAP_MIN_ADDR : not set
 Recommended value:
 CONFIG_LSM_MMAP_MIN_ADDR : 65536
+
+Integrity options that need improvement:
 
 Actual value:
 CONFIG_SECURITY_NETWORKING : not set
 Recommended value:
 CONFIG_SECURITY_NETWORKING : y
 
+Integrity options that need improvement:
+
 Actual value:
 CONFIG_SECURITY_YAMA : not set
 Recommended value:
 CONFIG_SECURITY_YAMA : y
+
+Integrity options that need improvement:
 
 Actual value:
 CONFIG_SECURITY_YAMA_STACKED : not set

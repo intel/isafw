@@ -35,27 +35,31 @@ import os
 import filecmp
 import tarfile
 import stat
+from datetime import datetime
 
-reportdir = "./fsa_plugin/output"
 fsroot_path = "./fsa_plugin/data/rootfs"
 unpack_path = "./fsa_plugin/data/"
 ar_path = "./fsa_plugin/data/rootfs.tar.gz"
 ref_fsa_problems_output = "./fsa_plugin/data/ref_fsa_problems_report_TestImage"
 ref_fsa_full_output = "./fsa_plugin/data/ref_fsa_full_report_TestImage"
+isafw_conf = isafw.ISA_config()
+isafw_conf.reportdir = "./fsa_plugin/output"
 
 class TestFSAPlugin(unittest.TestCase):
 
     def setUp(self):
         # cleaning up the report dir and creating it if needed
-        if os.path.exists(os.path.dirname(reportdir+"/internal/test")):
-            shutil.rmtree(reportdir)
-        os.makedirs(os.path.dirname(reportdir+"/internal/test"))
+        if os.path.exists(os.path.dirname(isafw_conf.reportdir+"/internal/test")):
+            shutil.rmtree(isafw_conf.reportdir)
+        os.makedirs(os.path.dirname(isafw_conf.reportdir+"/internal/test"))
+        # setting the timestamp
+        isafw_conf.timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         # fetching proxy info
-        proxy = ""
+        isafw_conf.proxy = ""
         if "http_proxy" in os.environ:
-            proxy = os.environ['http_proxy']
+            isafw_conf.proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
-            proxy = os.environ['https_proxy']
+            isafw_conf.proxy = os.environ['https_proxy']
         # unpack the rootfs for the test
         ar = tarfile.open(ar_path)
         ar.extractall(unpack_path)
@@ -63,19 +67,33 @@ class TestFSAPlugin(unittest.TestCase):
         # setup the permissions for the test, need to be root
         self.perms_setup(fsroot_path)
         # creating ISA FW class
-        self.imageSecurityAnalyser = isafw.ISA(proxy, reportdir)
+        self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         fs = isafw.ISA_filesystem()
         fs.img_name = "TestImage"
         fs.path_to_fs = fsroot_path
         self.imageSecurityAnalyser.process_filesystem(fs)
 
-    def test_fsa_problems_report(self):
-        self.assertTrue(filecmp.cmp(reportdir + "/fsa_problems_report_TestImage", ref_fsa_problems_output),
-                         'Output does not match')
+    def sortFile(self,file,fileName):
+        f = open(file, "r")
+        lines = [line for line in f if line.strip()]
+        f.close()
+        lines.sort()
+        aux = open(isafw_conf.reportdir + '/' + fileName, "w")
+        aux.writelines(lines)
+        aux.close()
 
     def test_fsa_full_report(self):
-        self.assertTrue(filecmp.cmp(reportdir + "/fsa_full_report_TestImage", ref_fsa_full_output),
-                         'Output does not match')
+        self.sortFile(isafw_conf.reportdir + "/fsa_full_report_TestImage_" + isafw_conf.timestamp,'sortedFSAFull')
+        self.sortFile(ref_fsa_full_output,'sortedRefFSAFull')
+        self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedFSAFull',isafw_conf.reportdir + '/sortedRefFSAFull'),
+                        'Output does not match')
+
+    def test_fsa_problems_report(self):
+        self.sortFile(isafw_conf.reportdir + "/fsa_problems_report_TestImage_" + isafw_conf.timestamp,'sortedFSAPbms')
+        self.sortFile(ref_fsa_problems_output,'sortedRefFSAPbms')
+        self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedFSAPbms',isafw_conf.reportdir + '/sortedRefFSAPbms'),
+                        'Output does not match')
+
     def perms_setup(self, fsroot_path):
         os.chmod(fsroot_path + "/file1", 0777)
         os.chown(fsroot_path + "/file2", 0, 0)

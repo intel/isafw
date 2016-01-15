@@ -32,24 +32,28 @@ sys.path.append("../isafw")
 import isafw
 import shutil
 import os
+from datetime import datetime
 
-reportdir = "./cve_plugin/output"
+isafw_conf = isafw.ISA_config()
+isafw_conf.reportdir = "./cve_plugin/output"
 
 class TestCVEPlugin(unittest.TestCase):
 
     def setUp(self):
         # cleaning up the report dir and creating it if needed
-        if os.path.exists(os.path.dirname(reportdir+"/internal/test")):
-            shutil.rmtree(reportdir)
-        os.makedirs(os.path.dirname(reportdir+"/internal/test"))
+        if os.path.exists(os.path.dirname(isafw_conf.reportdir+"/internal/test")):
+            shutil.rmtree(isafw_conf.reportdir)
+        os.makedirs(os.path.dirname(isafw_conf.reportdir+"/internal/test"))
+        # setting the timestamp
+        isafw_conf.timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         # fetching proxy info
-        proxy = ""
+        isafw_conf.proxy = ""
         if "http_proxy" in os.environ:
-            proxy = os.environ['http_proxy']
+            isafw_conf.proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
-            proxy = os.environ['https_proxy']
+            isafw_conf.proxy = os.environ['https_proxy']
         # creating ISA FW class
-        self.imageSecurityAnalyser = isafw.ISA(proxy, reportdir)
+        self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
 
     def test_package_with_cves_nopatches(self):
         pkg = isafw.ISA_package()
@@ -57,7 +61,7 @@ class TestCVEPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.patch_files.append("None")
         self.imageSecurityAnalyser.process_package(pkg)
-        with open(reportdir + "/cve-report", 'r') as freport:
+        with open(isafw_conf.reportdir + "/cve-report_" + isafw_conf.timestamp + ".csv", 'r') as freport:
             output = freport.readline()
         self.assertEqual(output, 
                         "bash,4.3,CVE-2014-6271 CVE-2014-6277 CVE-2014-6278 CVE-2014-7169 CVE-2014-7186 CVE-2014-7187,,0\n",
@@ -69,7 +73,7 @@ class TestCVEPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.patch_files = ["bash-cve-2014-6271"]
         self.imageSecurityAnalyser.process_package(pkg)
-        with open(reportdir + "/cve-report", 'r') as freport:
+        with open(isafw_conf.reportdir + "/cve-report_" + isafw_conf.timestamp + ".csv", 'r') as freport:
             output = freport.readline()
         self.assertEqual(output, 
                         "bash,4.3,CVE-2014-6277 CVE-2014-6278 CVE-2014-7169 CVE-2014-7186 CVE-2014-7187,CVE-2014-6271,0\n",
@@ -81,7 +85,7 @@ class TestCVEPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.patch_files = ["bash_-cve-2014-6271"]
         self.imageSecurityAnalyser.process_package(pkg)
-        with open(reportdir + "/cve-report", 'r') as freport:
+        with open(isafw_conf.reportdir + "/cve-report_" + isafw_conf.timestamp + ".csv", 'r') as freport:
             output = freport.readline()
         self.assertEqual(output, 
                         "bash,4.3,CVE-2014-6277 CVE-2014-6278 CVE-2014-7169 CVE-2014-7186 CVE-2014-7187,CVE-2014-6271,0\n",
@@ -93,7 +97,7 @@ class TestCVEPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.patch_files = ["cve-2014-6271"]
         self.imageSecurityAnalyser.process_package(pkg)
-        with open(reportdir + "/cve-report", 'r') as freport:
+        with open(isafw_conf.reportdir + "/cve-report_" + isafw_conf.timestamp + ".csv", 'r') as freport:
             output = freport.readline()
         self.assertEqual(output, 
                         "bash,4.3,CVE-2014-6277 CVE-2014-6278 CVE-2014-7169 CVE-2014-7186 CVE-2014-7187,CVE-2014-6271,0\n",
@@ -105,7 +109,7 @@ class TestCVEPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.patch_files = ["CVE-2014-6271", "CVE-2014-7187-bash"]
         self.imageSecurityAnalyser.process_package(pkg)
-        with open(reportdir + "/cve-report", 'r') as freport:
+        with open(isafw_conf.reportdir + "/cve-report_" + isafw_conf.timestamp + ".csv", 'r') as freport:
             output = freport.readline()
         self.assertEqual(output, 
                         "bash,4.3,CVE-2014-6277 CVE-2014-6278 CVE-2014-7169 CVE-2014-7186,CVE-2014-6271 CVE-2014-7187,0\n",
@@ -117,7 +121,7 @@ class TestCVEPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.patch_files = ["bash-CVE-2014-6271"]
         self.imageSecurityAnalyser.process_package(pkg)
-        with open(reportdir + "/cve-report", 'r') as freport:
+        with open(isafw_conf.reportdir + "/cve-report_" + isafw_conf.timestamp + ".csv", 'r') as freport:
             output = freport.readline()
         self.assertEqual(output, 
                         "bash,4.3,CVE-2014-6277 CVE-2014-6278 CVE-2014-7169 CVE-2014-7186 CVE-2014-7187,CVE-2014-6271,0\n",
@@ -129,7 +133,7 @@ class TestCVEPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.patch_files = ["bash-CVE-2014-6271", "cve-2014-7186"]
         self.imageSecurityAnalyser.process_package(pkg)
-        with open(reportdir + "/cve-report", 'r') as freport:
+        with open(isafw_conf.reportdir + "/cve-report_" + isafw_conf.timestamp + ".csv", 'r') as freport:
             output = freport.readline()
         self.assertEqual(output, 
                         "bash,4.3,CVE-2014-6277 CVE-2014-6278 CVE-2014-7169 CVE-2014-7187,CVE-2014-6271 CVE-2014-7186,0\n",
