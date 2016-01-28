@@ -60,7 +60,7 @@ class TestLACPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.licenses = ["Apache-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
-        badLicExist = os.path.isfile (isafw_conf.reportdir + "/license_report_" + isafw_conf.timestamp)	
+        badLicExist = os.path.isfile (isafw_conf.reportdir + "/la_problems_report_" + isafw_conf.timestamp)	
         # if no bad licenses exist no report is created
         self.assertFalse(badLicExist)
 
@@ -69,8 +69,9 @@ class TestLACPlugin(unittest.TestCase):
         pkg.name = "bash"
         pkg.version = "4.3"
         pkg.licenses = ["BadLicense-1.1"]
-        self.imageSecurityAnalyser.process_package(pkg)		
-        with open(isafw_conf.reportdir + "/license_report_" + isafw_conf.timestamp, 'r') as freport:
+        self.imageSecurityAnalyser.process_package(pkg)
+        self.imageSecurityAnalyser.process_report()		
+        with open(isafw_conf.reportdir + "/la_problems_report_" + isafw_conf.timestamp, 'r') as freport:
             output = freport.readline()
         # if bad licenses exist, a report listing them is created
         self.assertEqual(output, 

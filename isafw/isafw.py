@@ -47,6 +47,7 @@ class ISA_package:
     name = ""                     # pkg name                            (mandatory argument)
     version = ""                  # full version                        (mandatory argument)
     licenses = []                 # list of licences for all subpackages
+    aliases = []                  # list of alias names for packages if exist
     source_files = []             # list of strings of source files 
     patch_files = []              # list of patch files to be applied
     path_to_sources = ""          # path to the source files
@@ -179,6 +180,24 @@ class ISA:
                 except:
                     print("Exception in plugin: ", sys.exc_info())
 
+    def process_report(self):
+        for name in isaplugins.__all__:
+            plugin = getattr(isaplugins, name)
+            try:
+                # see if the plugin has a 'process_report' attribute
+                process_report = plugin.process_report
+            except AttributeError:
+                # if it doesn't, it is ok, won't call this plugin
+                pass
+            else:
+                if self.ISA_config.plugin_whitelist and plugin.getPluginName() not in self.ISA_config.plugin_whitelist:
+                    continue
+                if self.ISA_config.plugin_blacklist and plugin.getPluginName() in self.ISA_config.plugin_blacklist:
+                    continue
+                try:
+                    process_report()
+                except:
+                    print("Exception in plugin: ", sys.exc_info())
 
 
 
