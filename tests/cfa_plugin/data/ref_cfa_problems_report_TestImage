@@ -979,3 +979,9 @@ Files with no PIE:
 
 
 Files with no NX:
+
+
+Files with executable stack enabled:
+
+
+Files with no ability to fetch executable stack status:
