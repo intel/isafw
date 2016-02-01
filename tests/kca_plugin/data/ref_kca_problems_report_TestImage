@@ -69,6 +69,11 @@ Recommended value:
 CONFIG_STRICT_DEVMEM : y
 
 Actual value:
+CONFIG_X86_INTEL_MPX : not set
+Recommended value:
+CONFIG_X86_INTEL_MPX : y
+
+Actual value:
 CONFIG_X86_MSR : y
 Recommended value:
 CONFIG_X86_MSR : not set
