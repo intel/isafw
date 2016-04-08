@@ -57,6 +57,7 @@ class TestKCAPlugin(unittest.TestCase):
         if "https_proxy" in os.environ:
             isafw_conf.proxy = os.environ['https_proxy']
         isafw_conf.full_reports = True
+        isafw_conf.machine = "TestCaseMachine"
         # creating ISA FW class
         self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         kernel = isafw.ISA_kernel()
@@ -74,13 +75,13 @@ class TestKCAPlugin(unittest.TestCase):
         aux.close()       
 
     def test_kca_full_report(self):
-        self.sortFile(isafw_conf.reportdir + "/kca_full_report_TestImage_" + isafw_conf.timestamp,'sortedKCAFull')
+        self.sortFile(isafw_conf.reportdir + "/kca_full_report_" + isafw_conf.machine + "_" + isafw_conf.timestamp + "_TestImage",'sortedKCAFull')
         self.sortFile(ref_kca_full_output, 'sortedRefKCAFull')
         self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedKCAFull',isafw_conf.reportdir + '/sortedRefKCAFull'),
                         'Output does not match')
 
     def test_kca_problems_report(self):
-        self.sortFile(isafw_conf.reportdir + "/kca_problems_report_TestImage_" + isafw_conf.timestamp,'sortedKCAPbms')
+        self.sortFile(isafw_conf.reportdir + "/kca_problems_report_" + isafw_conf.machine + "_" + isafw_conf.timestamp + "_TestImage",'sortedKCAPbms')
         self.sortFile(ref_kca_problems_output,'sortedRefKCAPbms')
         self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedKCAPbms',isafw_conf.reportdir + '/sortedRefKCAPbms'),
                         'Output does not match')

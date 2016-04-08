@@ -92,28 +92,20 @@ CONFIG_INTEL_TXT : not set
 Recommended value:
 CONFIG_INTEL_TXT : y
 
-Integrity options that need improvement:
-
 Actual value:
 CONFIG_LSM_MMAP_MIN_ADDR : not set
 Recommended value:
 CONFIG_LSM_MMAP_MIN_ADDR : 65536
-
-Integrity options that need improvement:
 
 Actual value:
 CONFIG_SECURITY_NETWORKING : not set
 Recommended value:
 CONFIG_SECURITY_NETWORKING : y
 
-Integrity options that need improvement:
-
 Actual value:
 CONFIG_SECURITY_YAMA : not set
 Recommended value:
 CONFIG_SECURITY_YAMA : y
-
-Integrity options that need improvement:
 
 Actual value:
 CONFIG_SECURITY_YAMA_STACKED : not set

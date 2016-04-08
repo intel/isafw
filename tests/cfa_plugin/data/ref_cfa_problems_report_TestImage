@@ -1,7 +1,9 @@
 Report for image: TestImage
 With rootfs location at ./cfa_plugin/data/rootfs
 
-Files with no RELO:
+Relocation Read-Only
+More information about RELRO and how to enable it: http://tk-blog.blogspot.de/2009/02/relro-not-so-well-known-memory.html
+Files with no RELRO:
 /boot/grub/x86_64-efi/syslinuxcfg.mod
 /boot/grub/x86_64-efi/lsefi.mod
 /boot/grub/x86_64-efi/gcry_rijndael.mod
@@ -460,8 +462,55 @@ Files with no RELO:
 /boot/grub/x86_64-efi/boot.mod
 /boot/grub/x86_64-efi/part_sun.mod
 /boot/grub/x86_64-efi/gcry_rmd160.mod
+Files with partial RELRO:
+/bin/dd
+/bin/chvt
+/bin/chacl
+/bin/date
+/bin/chmod
+/bin/bunzip2
+/bin/dbus-uuidgen
+/bin/dbus-cleanup-sockets
+/bin/df
+/bin/cpio
+/bin/bzip2
+/bin/bzcat
+/bin/bash
+/bin/dbus-daemon
+/bin/bzip2recover
+/bin/busybox
+/bin/cat
+/bin/dmesg
+/bin/chgrp
+/bin/cp
+/bin/dir
+/bin/chown
+/bin/dd
+/bin/chvt
+/bin/chacl
+/bin/date
+/bin/chmod
+/bin/bunzip2
+/bin/dbus-uuidgen
+/bin/dbus-cleanup-sockets
+/bin/df
+/bin/cpio
+/bin/bzip2
+/bin/bzcat
+/bin/bash
+/bin/dbus-daemon
+/bin/bzip2recover
+/bin/busybox
+/bin/cat
+/bin/dmesg
+/bin/chgrp
+/bin/cp
+/bin/dir
+/bin/chown
 
 
+Stack protection
+More information about canary stack protection and how to enable it:https://lwn.net/Articles/584225/ 
 Files with no canary:
 /boot/grub/x86_64-efi/syslinuxcfg.mod
 /boot/grub/x86_64-efi/lsefi.mod
@@ -931,6 +980,8 @@ Files with no canary:
 /bin/busybox
 
 
+Position Independent Executable
+More information about PIE protection and how to enable it:https://securityblog.redhat.com/2012/11/28/position-independent-executables-pie/
 Files with no PIE:
 /bin/dd
 /bin/chvt
@@ -978,15 +1029,15 @@ Files with no PIE:
 /bin/chown
 
 
-Files with no NX:
-
-
+Non-executable stack
 Files with executable stack enabled:
 
 
 Files with no ability to fetch executable stack status:
 
 
+Grop initialization:
+If using setuid/setgid calls in code, one must call initgroups or setgroups
 Files that don't initialize groups while using setuid/setgid:
 /bin/cpio
 /bin/bash
@@ -994,6 +1045,8 @@ Files that don't initialize groups while using setuid/setgid:
 /bin/bash
 
 
+Memory Protection Extensions
+More information about MPX protection and how to enable it:https://software.intel.com/sites/default/files/managed/9d/f6/Intel_MPX_EnablingGuide.pdf
 Files that don't have MPX protection enabled:
 /boot/grub/x86_64-efi/syslinuxcfg.mod
 /boot/grub/x86_64-efi/lsefi.mod

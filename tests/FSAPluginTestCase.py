@@ -66,6 +66,8 @@ class TestFSAPlugin(unittest.TestCase):
         ar.close()
         # setup the permissions for the test, need to be root
         self.perms_setup(fsroot_path)
+        isafw_conf.machine = "TestCaseMachine"
+        isafw_conf.full_reports = True
         # creating ISA FW class
         self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         fs = isafw.ISA_filesystem()
@@ -83,13 +85,13 @@ class TestFSAPlugin(unittest.TestCase):
         aux.close()
 
     def test_fsa_full_report(self):
-        self.sortFile(isafw_conf.reportdir + "/fsa_full_report_TestImage_" + isafw_conf.timestamp,'sortedFSAFull')
+        self.sortFile(isafw_conf.reportdir + "/fsa_full_report_" + isafw_conf.machine + "_" + isafw_conf.timestamp + "_TestImage",'sortedFSAFull')
         self.sortFile(ref_fsa_full_output,'sortedRefFSAFull')
         self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedFSAFull',isafw_conf.reportdir + '/sortedRefFSAFull'),
                         'Output does not match')
 
     def test_fsa_problems_report(self):
-        self.sortFile(isafw_conf.reportdir + "/fsa_problems_report_TestImage_" + isafw_conf.timestamp,'sortedFSAPbms')
+        self.sortFile(isafw_conf.reportdir + "/fsa_problems_report_" + isafw_conf.machine + "_" + isafw_conf.timestamp + "_TestImage",'sortedFSAPbms')
         self.sortFile(ref_fsa_problems_output,'sortedRefFSAPbms')
         self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedFSAPbms',isafw_conf.reportdir + '/sortedRefFSAPbms'),
                         'Output does not match')

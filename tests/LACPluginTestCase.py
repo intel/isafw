@@ -51,6 +51,8 @@ class TestLACPlugin(unittest.TestCase):
             isafw_conf.proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
             isafw_conf.proxy = os.environ['https_proxy']
+        isafw_conf.machine = "TestCaseMachine"
+        self.la_report_path = isafw_conf.reportdir + "/la_problems_report_" + isafw_conf.machine + "_" + isafw_conf.timestamp
         # creating ISA FW class
         self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
 
@@ -61,7 +63,7 @@ class TestLACPlugin(unittest.TestCase):
         pkg.licenses = ["Apache-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
         self.imageSecurityAnalyser.process_report()
-        badLicExist = os.path.isfile (isafw_conf.reportdir + "/la_problems_report_" + isafw_conf.timestamp)	
+        badLicExist = os.path.isfile (self.la_report_path)	
         # if no bad licenses exist no report is created
         self.assertFalse(badLicExist)
 
@@ -72,7 +74,7 @@ class TestLACPlugin(unittest.TestCase):
         pkg.licenses = ["BadLicense-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
         self.imageSecurityAnalyser.process_report()		
-        with open(isafw_conf.reportdir + "/la_problems_report_" + isafw_conf.timestamp, 'r') as freport:
+        with open(self.la_report_path, 'r') as freport:
             output = freport.readline()
         # if bad licenses exist, a report listing them is created
         self.assertEqual(output, 

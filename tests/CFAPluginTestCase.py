@@ -60,7 +60,9 @@ class TestCFAPlugin(unittest.TestCase):
             isafw_conf.proxy = os.environ['https_proxy']
         # unpacking rootfs
         fsroot_arch = tarfile.open(name=fsroot_tar, mode='r')
-        fsroot_arch.extractall(path=fsroot_path, members=None)  
+        fsroot_arch.extractall(path=fsroot_path, members=None)
+        isafw_conf.machine = "TestCaseMachine"
+        isafw_conf.full_reports = True
         # creating ISA FW class
         self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         fs = isafw.ISA_filesystem()
@@ -83,13 +85,13 @@ class TestCFAPlugin(unittest.TestCase):
         aux.close()       
 
     def test_cfa_full_report(self):
-        self.sortFile(isafw_conf.reportdir + "/cfa_full_report_TestImage_" + isafw_conf.timestamp,'sortedCFAFull')
+        self.sortFile(isafw_conf.reportdir + "/cfa_full_report_" + isafw_conf.machine + "_" + isafw_conf.timestamp + "_TestImage",'sortedCFAFull')
         self.sortFile(ref_cfa_full_output,'sortedRefCFAFull')
         self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedCFAFull',isafw_conf.reportdir + '/sortedRefCFAFull'),
                         'Output does not match')
 
     def test_cfa_problems_report(self):
-        self.sortFile(isafw_conf.reportdir + "/cfa_problems_report_TestImage_" + isafw_conf.timestamp,'sortedCFAPbms')
+        self.sortFile(isafw_conf.reportdir + "/cfa_problems_report_" + isafw_conf.machine + "_" + isafw_conf.timestamp + "_TestImage",'sortedCFAPbms')
         self.sortFile(ref_cfa_problems_output,'sortedRefCFAPbms')
         self.assertTrue(filecmp.cmp(isafw_conf.reportdir + '/sortedCFAPbms',isafw_conf.reportdir + '/sortedRefCFAPbms'),
                         'Output does not match')
