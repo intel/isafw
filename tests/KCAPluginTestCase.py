@@ -56,6 +56,7 @@ class TestKCAPlugin(unittest.TestCase):
             isafw_conf.proxy = os.environ['http_proxy']
         if "https_proxy" in os.environ:
             isafw_conf.proxy = os.environ['https_proxy']
+        isafw_conf.full_reports = True
         # creating ISA FW class
         self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         kernel = isafw.ISA_kernel()

@@ -60,6 +60,7 @@ class TestLACPlugin(unittest.TestCase):
         pkg.version = "4.3"
         pkg.licenses = ["Apache-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
+        self.imageSecurityAnalyser.process_report()
         badLicExist = os.path.isfile (isafw_conf.reportdir + "/la_problems_report_" + isafw_conf.timestamp)	
         # if no bad licenses exist no report is created
         self.assertFalse(badLicExist)
