@@ -28,8 +28,8 @@
 
 import unittest
 import sys
-sys.path.append("../isafw") 
-import isafw
+from isafw import isafw
+import isaplugins
 import shutil
 import os
 from datetime import datetime

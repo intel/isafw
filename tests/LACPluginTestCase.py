@@ -28,8 +28,9 @@
 
 import unittest
 import sys
-sys.path.append("../isafw") 
-import isafw
+from isafw import isafw
+import isaplugins
+
 import shutil
 import os
 from datetime import datetime
@@ -60,7 +61,7 @@ class TestLACPlugin(unittest.TestCase):
         pkg = isafw.ISA_package()
         pkg.name = "bash"
         pkg.version = "4.3"
-        pkg.licenses = ["Apache-1.1"]
+        pkg.licenses = ["bash:Apache-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
         self.imageSecurityAnalyser.process_report()
         badLicExist = os.path.isfile (self.la_report_path)	
@@ -71,14 +72,14 @@ class TestLACPlugin(unittest.TestCase):
         pkg = isafw.ISA_package()
         pkg.name = "bash"
         pkg.version = "4.3"
-        pkg.licenses = ["BadLicense-1.1"]
+        pkg.licenses = ["bash:BadLicense-1.1"]
         self.imageSecurityAnalyser.process_package(pkg)
         self.imageSecurityAnalyser.process_report()		
         with open(self.la_report_path, 'r') as freport:
             output = freport.readline()
         # if bad licenses exist, a report listing them is created
         self.assertEqual(output, 
-                        "bash: BadLicense-1.1\n",
+                        "bash:BadLicense-1.1\n",
                         'Output does not match') 
 
 if __name__ == '__main__':

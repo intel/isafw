@@ -28,8 +28,8 @@
 
 import unittest
 import sys
-sys.path.append("../isafw") 
-import isafw
+from isafw import isafw
+import isaplugins
 import shutil
 import os
 import filecmp
@@ -63,6 +63,7 @@ class TestCFAPlugin(unittest.TestCase):
         fsroot_arch.extractall(path=fsroot_path, members=None)
         isafw_conf.machine = "TestCaseMachine"
         isafw_conf.full_reports = True
+        isafw_conf.logdir = "./cfa_plugin/"
         # creating ISA FW class
         self.imageSecurityAnalyser = isafw.ISA(isafw_conf)
         fs = isafw.ISA_filesystem()
