@@ -26,24 +26,30 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-import unittest
-from CVEPluginTestCase import *
-from KCAPluginTestCase import *
-from CFAPluginTestCase import *
-from FSAPluginTestCase import *
-from LACPluginTestCase import *
+import sys
+import os
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestCVEPlugin)
-unittest.TextTestRunner(verbosity=2).run(suite)
+if __name__ == "__main__":
+    sys.path.append(os.path.join(sys.path[0], ".."))
+    sys.path.append(os.path.join(sys.path[0], "..", "isafw"))
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestKCAPlugin)
-unittest.TextTestRunner(verbosity=2).run(suite)
+    from CFAPluginTestCase import *
+    from CVEPluginTestCase import *
+    from FSAPluginTestCase import *
+    from KCAPluginTestCase import *
+    from LACPluginTestCase import *
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestCFAPlugin)
-unittest.TextTestRunner(verbosity=2).run(suite)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestCVEPlugin)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestFSAPlugin)
-unittest.TextTestRunner(verbosity=2).run(suite)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestKCAPlugin)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestLACPlugin) 
-unittest.TextTestRunner(verbosity=2).run(suite)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestCFAPlugin)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestFSAPlugin)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestLACPlugin)
+    unittest.TextTestRunner(verbosity=2).run(suite)
