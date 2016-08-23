@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import importlib
 
 try:
     from lxml import etree
@@ -34,166 +35,11 @@ except ImportError:
     except ImportError:
         import xml.etree.ElementTree as etree
 
-
 KCAnalyzer = None
 
 
 class ISA_KernelChecker():
     initialized = False
-
-    ############################################################################################
-    # Kernel Hardening Configurations
-    ############################################################################################
-    hardening_arch_kco = {'common': {'CONFIG_CC_STACKPROTECTOR': 'not set',
-                                     'CONFIG_KEXEC': 'not set',
-                                     'CONFIG_PROC_KCORE': 'not set',
-                                     'CONFIG_SECURITY_DMESG_RESTRICT': 'not set',
-                                     'CONFIG_DEBUG_STACKOVERFLOW': 'not set',
-                                     'CONFIG_DEBUG_STRICT_USER_COPY_CHECKS': 'not set',
-                                     'CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS': 'not set',
-                                     'CONFIG_IKCONFIG_PROC': 'not set',
-                                     'CONFIG_RANDOMIZE_BASE': 'not set',
-                                     'CONFIG_DEBUG_RODATA': 'not set',
-                                     'CONFIG_STRICT_DEVMEM': 'not set',
-                                     'CONFIG_DEVKMEM': 'not set',
-                                     'CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE': 'not set',
-                                     'CONFIG_DEBUG_KERNEL': 'not set',
-                                     'CONFIG_DEBUG_FS': 'not set',
-                                     'CONFIG_MODULE_SIG_FORCE': 'not set',
-                               },
-                     'x86': {'CONFIG_DEFAULT_MMAP_MIN_ADDR': 'not set',
-                             'CONFIG_RANDOMIZE_BASE_MAX_OFFSET': 'not set',
-                             'CONFIG_X86_INTEL_MPX': 'not set',
-                             'CONFIG_X86_MSR': 'not set'
-                             },
-                     'arm': {'CONFIG_DEFAULT_MMAP_MIN_ADDR': 'not set'
-                            }
-                    }
-    hardening_arch_kco_ref = { 'common': {'CONFIG_CC_STACKPROTECTOR': 'y',
-                                          'CONFIG_KEXEC': 'not set',
-                                          'CONFIG_PROC_KCORE': 'not set',
-                                          'CONFIG_SECURITY_DMESG_RESTRICT': 'y',
-                                          'CONFIG_DEBUG_STACKOVERFLOW': 'y',
-                                          'CONFIG_DEBUG_STRICT_USER_COPY_CHECKS': 'y',
-                                          'CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS': 'y',
-                                          'CONFIG_IKCONFIG_PROC': 'not set',
-                                          'CONFIG_RANDOMIZE_BASE': 'y',
-                                          'CONFIG_DEBUG_RODATA': 'y',
-                                          'CONFIG_STRICT_DEVMEM': 'y',
-                                          'CONFIG_DEVKMEM': 'not set',
-                                          'CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE': 'y',
-                                          'CONFIG_DEBUG_KERNEL': 'not set',
-                                          'CONFIG_DEBUG_FS': 'not set',
-                                          'CONFIG_MODULE_SIG_FORCE': 'y',
-                                     },
-                          'x86': {'CONFIG_DEFAULT_MMAP_MIN_ADDR': '65536', # x86 specific
-                                  'CONFIG_RANDOMIZE_BASE_MAX_OFFSET': '0x20000000,0x40000000', # x86 specific
-                                  'CONFIG_X86_INTEL_MPX': 'y', # x86 and certain HW variants specific
-                                  'CONFIG_X86_MSR': 'not set'
-                                 },
-                          'arm': {'CONFIG_DEFAULT_MMAP_MIN_ADDR': '32768'
-                                 }
-                        }
-
-    ############################################################################################
-    # Keys Kernel Configuration
-    ############################################################################################
-    keys_arch_kco = {'common': {'CONFIG_KEYS': 'not set',
-                                'CONFIG_TRUSTED_KEYS': 'not set',
-                                'CONFIG_ENCRYPTED_KEYS': 'not set',
-                                'CONFIG_KEYS_DEBUG_PROC_KEYS': 'not set'
-                      },
-                'x86': {},
-                'arm': {}
-               }
-    keys_arch_kco_ref = {'common': {'CONFIG_KEYS': 'y',
-                                    'CONFIG_TRUSTED_KEYS': 'y',
-                                    'CONFIG_ENCRYPTED_KEYS': 'y',
-                                    'CONFIG_KEYS_DEBUG_PROC_KEYS': 'not set'
-                              },
-                    'x86': {},
-                    'arm': {}
-                   }
-
-    ############################################################################################
-    # Security Kernel Configuration
-    ############################################################################################
-    security_arch_kco = {'common': {'CONFIG_SECURITY': 'not set',
-                                    'CONFIG_SECURITYFS': 'not set',
-                                    'CONFIG_SECURITY_NETWORKING': 'not set',
-                                    'CONFIG_DEFAULT_SECURITY': 'not set',
-                                    'CONFIG_SECURITY_SELINUX': 'not set',
-                                    'CONFIG_SECURITY_SMACK': 'not set',
-                                    'CONFIG_SECURITY_TOMOYO': 'not set',
-                                    'CONFIG_SECURITY_APPARMOR': 'not set',
-                                    'CONFIG_SECURITY_YAMA': 'not set',
-                                    'CONFIG_SECURITY_YAMA_STACKED': 'not set'
-                              },
-                    'x86': {'CONFIG_LSM_MMAP_MIN_ADDR': 'not set',
-                            'CONFIG_INTEL_TXT': 'not set'
-                           },
-                    'arm': {'CONFIG_LSM_MMAP_MIN_ADDR': 'not set'
-                           }
-                   }
-    security_arch_kco_ref = {'common': {'CONFIG_SECURITY': 'y',
-                                        'CONFIG_SECURITYFS': 'y',
-                                        'CONFIG_SECURITY_NETWORKING': 'y',
-                                        'CONFIG_DEFAULT_SECURITY': '"selinux","smack","apparmor","tomoyo"',
-                                        'CONFIG_SECURITY_SELINUX': 'y',
-                                        'CONFIG_SECURITY_SMACK': 'y',
-                                        'CONFIG_SECURITY_TOMOYO': 'y',
-                                        'CONFIG_SECURITY_APPARMOR': 'y',
-                                        'CONFIG_SECURITY_YAMA': 'y',
-                                        'CONFIG_SECURITY_YAMA_STACKED': 'y'
-                                  },
-                        'x86': {'CONFIG_LSM_MMAP_MIN_ADDR': '65536', # x86 specific
-                                'CONFIG_INTEL_TXT': 'y'
-                               },
-                        'arm': {'CONFIG_LSM_MMAP_MIN_ADDR': '32768'
-                               }
-                        }
-
-    ############################################################################################
-    # Integrity Kernel Configuration
-    ############################################################################################
-    integrity_arch_kco = {'common': {'CONFIG_INTEGRITY': 'not set',
-                                     'CONFIG_INTEGRITY_SIGNATURE': 'not set',
-                                     'CONFIG_INTEGRITY_AUDIT': 'not set',
-                                     'CONFIG_IMA': 'not set',
-                                     'CONFIG_IMA_LSM_RULES': 'not set',
-                                     'CONFIG_IMA_APPRAISE': 'not set',
-                                     'CONFIG_IMA_TRUSTED_KEYRING': 'not set',
-                                     'CONFIG_IMA_APPRAISE_SIGNED_INIT': 'not set',
-                                     'CONFIG_EVM': 'not set',
-                                     'CONFIG_EVM_ATTR_FSUUID': 'not set',
-                                     'CONFIG_EVM_EXTRA_SMACK_XATTRS': 'not set',
-                                     'CONFIG_IMA_DEFAULT_HASH_SHA1': 'not set',
-                                     'CONFIG_IMA_DEFAULT_HASH_SHA256': 'not set',
-                                     'CONFIG_IMA_DEFAULT_HASH_SHA512': 'not set',
-                                     'CONFIG_IMA_DEFAULT_HASH_WP512': 'not set'
-                               },
-                     'x86': {},
-                     'arm': {}
-                    }
-    integrity_arch_kco_ref = {'common': {'CONFIG_INTEGRITY': 'y',
-                                         'CONFIG_INTEGRITY_SIGNATURE': 'y',
-                                         'CONFIG_INTEGRITY_AUDIT': 'y',
-                                         'CONFIG_IMA': 'y',
-                                         'CONFIG_IMA_LSM_RULES': 'y',
-                                         'CONFIG_IMA_APPRAISE': 'y',
-                                         'CONFIG_IMA_TRUSTED_KEYRING': 'y',
-                                         'CONFIG_IMA_APPRAISE_SIGNED_INIT': 'y',
-                                         'CONFIG_EVM': 'y',
-                                         'CONFIG_EVM_ATTR_FSUUID': 'y',
-                                         'CONFIG_EVM_EXTRA_SMACK_XATTRS': 'y',
-                                         'CONFIG_IMA_DEFAULT_HASH_SHA1': 'not set',
-                                         'CONFIG_IMA_DEFAULT_HASH_SHA256': 'y',
-                                         'CONFIG_IMA_DEFAULT_HASH_SHA512': 'y',
-                                         'CONFIG_IMA_DEFAULT_HASH_WP512': 'not set'
-                                   } ,
-                         'x86': {},
-                         'arm': {}
-                        }
 
     def __init__(self, ISA_config):
         self.proxy = ISA_config.proxy
@@ -212,14 +58,14 @@ class ISA_KernelChecker():
         if (self.initialized):
             if (ISA_kernel.img_name and ISA_kernel.path_to_config):
                 # Merging common and arch configs
-                self.hardening_kco = merge_config(self.hardening_arch_kco[self.arch], self.hardening_arch_kco['common'])
-                self.hardening_kco_ref = merge_config(self.hardening_arch_kco_ref[self.arch], self.hardening_arch_kco_ref['common'])
-                self.keys_kco = merge_config(self.keys_arch_kco[self.arch], self.keys_arch_kco['common'])
-                self.keys_kco_ref = merge_config(self.keys_arch_kco_ref[self.arch], self.keys_arch_kco_ref['common'])
-                self.security_kco = merge_config(self.security_arch_kco[self.arch], self.security_arch_kco['common'])
-                self.security_kco_ref = merge_config(self.security_arch_kco_ref[self.arch], self.security_arch_kco_ref['common'])
-                self.integrity_kco = merge_config(self.integrity_arch_kco[self.arch], self.integrity_arch_kco['common'])
-                self.integrity_kco_ref = merge_config(self.integrity_arch_kco_ref[self.arch], self.integrity_arch_kco_ref['common'])
+                common_config_module = importlib.import_module('isafw.isaplugins.configs.kca.{}'.format('common'))
+                arch_config_module = importlib.import_module('isafw.isaplugins.configs.kca.{}'.format(self.arch))
+
+                for c in ["hardening_kco", "keys_kco", "security_kco", "integrity_kco",
+                          "hardening_kco_ref", "keys_kco_ref", "security_kco_ref", "integrity_kco_ref",
+                          "comments"]:
+                    setattr(self, c, merge_config(getattr(arch_config_module, c), getattr(common_config_module, c)))
+
                 with open(self.logfile, 'a') as flog:
                     flog.write("Analyzing kernel config file at: " + ISA_kernel.path_to_config +
                                " for the image: " + ISA_kernel.img_name + "\n")
@@ -282,86 +128,21 @@ class ISA_KernelChecker():
                     freport.write(
                         key + ' : ' + str(self.integrity_kco[key]) + '\n')
 
+    def append_recommendation(self, report, key, value):
+        report.write("Recommended value:\n")
+        report.write(key + ' : ' + str(value) + '\n')
+        comment = self.comments.get(key, '')
+        if comment != '':
+            report.write("Comment:\n")
+            report.write(comment + '\n')
+
     def write_problems_report(self, ISA_kernel):
-        with open(self.problems_report_name + "_" + ISA_kernel.img_name, 'w') as freport:
-            freport.write("Report for image: " + ISA_kernel.img_name + '\n')
-            freport.write("With the kernel conf at: " +
-                          ISA_kernel.path_to_config + '\n\n')
-            freport.write("Hardening options that need improvement:\n")
-            for key in sorted(self.hardening_kco):
-                if (self.hardening_kco[key] != self.hardening_kco_ref[key]):
-                    valid = False
-                    if (key == "CONFIG_DEBUG_STRICT_USER_COPY_CHECKS"):
-                        if (self.hardening_kco['CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS'] == 'y'):
-                            valid = True
-                    if (key == "CONFIG_RANDOMIZE_BASE_MAX_OFFSET"):
-                        options = self.hardening_kco_ref[key].split(',')
-                        for option in options:
-                            if (option == self.hardening_kco[key]):
-                                valid = True
-                                break
-                    if not valid:
-                        freport.write("\nActual value:\n")
-                        freport.write(
-                            key + ' : ' + str(self.hardening_kco[key]) + '\n')
-                        freport.write("Recommended value:\n")
-                        freport.write(
-                            key + ' : ' + str(self.hardening_kco_ref[key]) + '\n')
-            freport.write("\nKey-related options that need improvement:\n")
-            for key in sorted(self.keys_kco):
-                if (self.keys_kco[key] != self.keys_kco_ref[key]):
-                    freport.write("\nActual value:\n")
-                    freport.write(key + ' : ' + str(self.keys_kco[key]) + '\n')
-                    freport.write("Recommended value:\n")
-                    freport.write(
-                        key + ' : ' + str(self.keys_kco_ref[key]) + '\n')
-            freport.write("\nSecurity options that need improvement:\n")
-            for key in sorted(self.security_kco):
-                if (self.security_kco[key] != self.security_kco_ref[key]):
-                    valid = False
-                    if (key == "CONFIG_DEFAULT_SECURITY"):
-                        options = self.security_kco_ref[key].split(',')
-                        for option in options:
-                            if (option == self.security_kco[key]):
-                                valid = True
-                                break
-                    if ((key == "CONFIG_SECURITY_SELINUX") or
-                            (key == "CONFIG_SECURITY_SMACK") or
-                            (key == "CONFIG_SECURITY_APPARMOR") or
-                            (key == "CONFIG_SECURITY_TOMOYO")):
-                        if ((self.security_kco['CONFIG_SECURITY_SELINUX'] == 'y') or
-                                (self.security_kco['CONFIG_SECURITY_SMACK'] == 'y') or
-                                (self.security_kco['CONFIG_SECURITY_APPARMOR'] == 'y') or
-                                (self.security_kco['CONFIG_SECURITY_TOMOYO'] == 'y')):
-                            valid = True
-                    if not valid:
-                        freport.write("\nActual value:\n")
-                        freport.write(
-                            key + ' : ' + str(self.security_kco[key]) + '\n')
-                        freport.write("Recommended value:\n")
-                        freport.write(
-                            key + ' : ' + str(self.security_kco_ref[key]) + '\n')
-            freport.write("\nIntegrity options that need improvement:\n")
-            for key in sorted(self.integrity_kco):
-                if (self.integrity_kco[key] != self.integrity_kco_ref[key]):
-                    valid = False
-                    if ((key == "CONFIG_IMA_DEFAULT_HASH_SHA1") or
-                            (key == "CONFIG_IMA_DEFAULT_HASH_SHA256") or
-                            (key == "CONFIG_IMA_DEFAULT_HASH_SHA512") or
-                            (key == "CONFIG_IMA_DEFAULT_HASH_WP512")):
-                        if ((self.integrity_kco['CONFIG_IMA_DEFAULT_HASH_SHA256'] == 'y') or
-                                (self.integrity_kco['CONFIG_IMA_DEFAULT_HASH_SHA512'] == 'y')):
-                            valid = True
-                    if not valid:
-                        freport.write("\nActual value:\n")
-                        freport.write(
-                            key + ' : ' + str(self.integrity_kco[key]) + '\n')
-                        freport.write("Recommended value:\n")
-                        freport.write(
-                            key + ' : ' + str(self.integrity_kco_ref[key]) + '\n')
-        # write_problems_report_xml
+        self.write_text_problems_report(ISA_kernel)
+        self.write_xml_problems_report(ISA_kernel)
+
+    def write_xml_problems_report(self, ISA_kernel):
         num_tests = len(self.hardening_kco) + len(self.keys_kco) + \
-            len(self.security_kco) + len(self.integrity_kco)
+                    len(self.security_kco) + len(self.integrity_kco)
         root = etree.Element(
             'testsuite', name='KCA_Plugin', tests=str(num_tests))
         for key in sorted(self.hardening_kco):
@@ -369,6 +150,9 @@ class ISA_KernelChecker():
                 root, 'testcase', classname='Hardening options', name=key)
             if (self.hardening_kco[key] != self.hardening_kco_ref[key]):
                 valid = False
+                if (key == "CONFIG_CMDLINE"):
+                    if (len(self.hardening_kco['CONFIG_CMDLINE']) > 0):
+                        valid = True
                 if (key == "CONFIG_DEBUG_STRICT_USER_COPY_CHECKS"):
                     if (self.hardening_kco['CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS'] == 'y'):
                         valid = True
@@ -380,8 +164,8 @@ class ISA_KernelChecker():
                             break
                 if not valid:
                     msg1 = 'current=' + key + ' is ' + \
-                        str(self.hardening_kco[
-                            key]) + ', recommended=' + key + ' is ' + str(self.hardening_kco_ref[key])
+                           str(self.hardening_kco[
+                                   key]) + ', recommended=' + key + ' is ' + str(self.hardening_kco_ref[key])
                     etree.SubElement(
                         tcase1, 'failure', message=msg1, type='violation')
         for key in sorted(self.keys_kco):
@@ -389,8 +173,8 @@ class ISA_KernelChecker():
                 root, 'testcase', classname='Key-related options', name=key)
             if (self.keys_kco[key] != self.keys_kco_ref[key]):
                 msg2 = 'current=' + key + ' is ' + \
-                    str(self.keys_kco[key] + ', recommended=' +
-                        key + ' is ' + str(self.keys_kco_ref[key]))
+                       str(self.keys_kco[key] + ', recommended=' +
+                           key + ' is ' + str(self.keys_kco_ref[key]))
                 etree.SubElement(
                     tcase2, 'failure', message=msg2, type='violation')
         for key in sorted(self.security_kco):
@@ -415,8 +199,8 @@ class ISA_KernelChecker():
                         valid = True
                 if not valid:
                     msg3 = 'current=' + key + ' is ' + \
-                        str(self.security_kco[key]) + ', recommended=' + \
-                        key + ' is ' + str(self.security_kco_ref[key])
+                           str(self.security_kco[key]) + ', recommended=' + \
+                           key + ' is ' + str(self.security_kco_ref[key])
                     etree.SubElement(
                         tcase3, 'failure', message=msg3, type='violation')
         for key in sorted(self.integrity_kco):
@@ -433,8 +217,8 @@ class ISA_KernelChecker():
                         valid = True
                 if not valid:
                     msg4 = 'current=' + key + ' is ' + \
-                        str(self.integrity_kco[
-                            key]) + ', recommended=' + key + ' is ' + str(self.integrity_kco_ref[key])
+                           str(self.integrity_kco[
+                                   key]) + ', recommended=' + key + ' is ' + str(self.integrity_kco_ref[key])
                     etree.SubElement(
                         tcase4, 'failure', message=msg4, type='violation')
         tree = etree.ElementTree(root)
@@ -444,6 +228,80 @@ class ISA_KernelChecker():
                        pretty_print=True, xml_declaration=True)
         except TypeError:
             tree.write(output, encoding='UTF-8', xml_declaration=True)
+
+    def write_text_problems_report(self, ISA_kernel):
+        with open(self.problems_report_name + "_" + ISA_kernel.img_name, 'w') as freport:
+            freport.write("Report for image: " + ISA_kernel.img_name + '\n')
+            freport.write("With the kernel conf at: " +
+                          ISA_kernel.path_to_config + '\n\n')
+            freport.write("Hardening options that need improvement:\n")
+            for key in sorted(self.hardening_kco):
+                if (self.hardening_kco[key] != self.hardening_kco_ref[key]):
+                    valid = False
+                    if (key == "CONFIG_CMDLINE"):
+                        if (len(self.hardening_kco['CONFIG_CMDLINE']) > 0):
+                            valid = True
+                    if (key == "CONFIG_DEBUG_STRICT_USER_COPY_CHECKS"):
+                        if (self.hardening_kco['CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS'] == 'y'):
+                            valid = True
+                    if (key == "CONFIG_RANDOMIZE_BASE_MAX_OFFSET"):
+                        options = self.hardening_kco_ref[key].split(',')
+                        for option in options:
+                            if (option == self.hardening_kco[key]):
+                                valid = True
+                                break
+                    if not valid:
+                        freport.write("\nActual value:\n")
+                        freport.write(
+                            key + ' : ' + str(self.hardening_kco[key]) + '\n')
+                        self.append_recommendation(freport, key, self.hardening_kco_ref[key])
+            freport.write("\nKey-related options that need improvement:\n")
+            for key in sorted(self.keys_kco):
+                if (self.keys_kco[key] != self.keys_kco_ref[key]):
+                    freport.write("\nActual value:\n")
+                    freport.write(key + ' : ' + str(self.keys_kco[key]) + '\n')
+                    self.append_recommendation(freport, key, self.keys_kco_ref[key])
+            freport.write("\nSecurity options that need improvement:\n")
+            for key in sorted(self.security_kco):
+                if (self.security_kco[key] != self.security_kco_ref[key]):
+                    valid = False
+                    if (key == "CONFIG_DEFAULT_SECURITY"):
+                        options = self.security_kco_ref[key].split(',')
+                        for option in options:
+                            if (option == self.security_kco[key]):
+                                valid = True
+                                break
+                    if ((key == "CONFIG_SECURITY_SELINUX") or
+                            (key == "CONFIG_SECURITY_SMACK") or
+                            (key == "CONFIG_SECURITY_APPARMOR") or
+                            (key == "CONFIG_SECURITY_TOMOYO")):
+                        if ((self.security_kco['CONFIG_SECURITY_SELINUX'] == 'y') or
+                                (self.security_kco['CONFIG_SECURITY_SMACK'] == 'y') or
+                                (self.security_kco['CONFIG_SECURITY_APPARMOR'] == 'y') or
+                                (self.security_kco['CONFIG_SECURITY_TOMOYO'] == 'y')):
+                            valid = True
+                    if not valid:
+                        freport.write("\nActual value:\n")
+                        freport.write(
+                            key + ' : ' + str(self.security_kco[key]) + '\n')
+                        self.append_recommendation(freport, key, self.security_kco_ref[key])
+            freport.write("\nIntegrity options that need improvement:\n")
+            for key in sorted(self.integrity_kco):
+                if (self.integrity_kco[key] != self.integrity_kco_ref[key]):
+                    valid = False
+                    if ((key == "CONFIG_IMA_DEFAULT_HASH_SHA1") or
+                            (key == "CONFIG_IMA_DEFAULT_HASH_SHA256") or
+                            (key == "CONFIG_IMA_DEFAULT_HASH_SHA512") or
+                            (key == "CONFIG_IMA_DEFAULT_HASH_WP512")):
+                        if ((self.integrity_kco['CONFIG_IMA_DEFAULT_HASH_SHA256'] == 'y') or
+                                (self.integrity_kco['CONFIG_IMA_DEFAULT_HASH_SHA512'] == 'y')):
+                            valid = True
+                    if not valid:
+                        freport.write("\nActual value:\n")
+                        freport.write(
+                            key + ' : ' + str(self.integrity_kco[key]) + '\n')
+                        self.append_recommendation(freport, key, self.integrity_kco_ref[key])
+
 
 def merge_config(arch_kco, common_kco):
     merged = arch_kco.copy()
