@@ -1,2 +1,6 @@
 *~
 *.pyc
+.idea
+/tests/*_plugin/output*
+/tests/*_plugin/data/rootfs/
+/tests/*_plugin/*log
