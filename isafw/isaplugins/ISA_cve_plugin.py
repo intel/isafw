@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import subprocess
-import os
+import os, sys
 import re
 
 CVEChecker = None
@@ -39,6 +39,7 @@ class ISA_CVEChecker:
 
     def __init__(self, ISA_config):
         self.proxy = ISA_config.proxy
+        self.cacert = ISA_config.cacert
         self.reportdir = ISA_config.reportdir
         self.timestamp = ISA_config.timestamp
         self.logfile = ISA_config.logdir + "/isafw_cvelog"
@@ -101,20 +102,20 @@ class ISA_CVEChecker:
         if (self.initialized):
             with open(self.logfile, 'a') as flog:
                 flog.write("Creating report in HTML format.\n")
-            self.process_report_type("html")
+            result = self.process_report_type("html")
 
             with open(self.logfile, 'a') as flog:
                 flog.write("Creating report in CSV format.\n")
-            self.process_report_type("csv")
+            result = self.process_report_type("csv")
 
             pkglist_faux = pkglist + "_" + self.timestamp + ".faux"
             os.remove(self.reportdir + pkglist_faux)
 
             with open(self.logfile, 'a') as flog:
                 flog.write("Creating report in XML format.\n")
-            self.write_report_xml()
+            self.write_report_xml(result)
 
-    def write_report_xml(self):
+    def write_report_xml(self, result):
         try:
             from lxml import etree
         except ImportError:
@@ -124,19 +125,27 @@ class ISA_CVEChecker:
                 import xml.etree.ElementTree as etree
         num_tests = 0
         root = etree.Element('testsuite', name='CVE_Plugin', tests='1')
-        with open(self.report_name + ".csv", 'r') as f:
-            for line in f:
-                num_tests += 1
-                line = line.strip()
-                line_sp = line.split(',', 2)
-                if (len(line_sp) >= 3) and (line_sp[2].startswith('CVE')):
-                    tcase = etree.SubElement(
-                        root, 'testcase', classname='ISA_CVEChecker', name=line.split(',', 1)[0])
-                    etree.SubElement(
-                        tcase, 'failure', message=line, type='violation')
-                else:
-                    tcase = etree.SubElement(
-                        root, 'testcase', classname='ISA_CVEChecker', name=line.split(',', 1)[0])
+
+        if result :
+            num_tests = 1
+            tcase = etree.SubElement(
+                        root, 'testcase', classname='ISA_CVEChecker', name="Error in cve-check-tool")
+            etree.SubElement( tcase, 'failure', message=result, type='violation')
+        else:
+            with open(self.report_name + ".csv", 'r') as f:
+                for line in f:
+                    num_tests += 1
+                    line = line.strip()
+                    line_sp = line.split(',', 2)
+                    if (len(line_sp) >= 3) and (line_sp[2].startswith('CVE')):
+                        tcase = etree.SubElement(
+                            root, 'testcase', classname='ISA_CVEChecker', name=line.split(',', 1)[0])
+                        etree.SubElement(
+                            tcase, 'failure', message=line, type='violation')
+                    else:
+                        tcase = etree.SubElement(
+                            root, 'testcase', classname='ISA_CVEChecker', name=line.split(',', 1)[0])
+
         root.set('tests', str(num_tests))
         tree = etree.ElementTree(root)
         output = self.report_name + '.xml'
@@ -149,9 +158,13 @@ class ISA_CVEChecker:
     def process_report_type(self, rtype):
         # now faux file is ready and we can process it
         args = ""
+        result = ""
+        tool_stderr_value = ""
         if self.proxy:
             args += "https_proxy=%s http_proxy=%s " % (self.proxy, self.proxy)
         args += "cve-check-tool "
+        if self.cacert:
+            args += "--cacert '%s' " % self.cacert
         if rtype != "html":
             args += "-c "
             rtype = "csv"
@@ -161,17 +174,24 @@ class ISA_CVEChecker:
             flog.write("Args: " + args)
         try:
             popen = subprocess.Popen(
-                args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            stdout_value = popen.communicate()[0]
+                args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = popen.communicate()
         except:
-            stdout_value = "Error in executing cve-check-tool"
+            tool_stderr_value = "Error in executing cve-check-tool" + str(sys.exc_info())
             with open(self.logfile, 'a') as flog:
                 flog.write("Error in executing cve-check-tool: " +
-                           sys.exc_info())
+                           str(sys.exc_info()))
         else:
-            report = self.report_name + "." + rtype
-            with open(report, 'wb') as freport:
-                freport.write(stdout_value)
+            stdout_value = result[0]
+            tool_stderr_value = result[1].decode('utf-8')
+            if not tool_stderr_value and popen.returncode == 0:
+                report = self.report_name + "." + rtype
+                with open(report, 'wb') as freport:
+                    freport.write(stdout_value)
+            else:
+                tool_stderr_value = tool_stderr_value + \
+                "\ncve-check-tool terminated with exit code " + str(popen.returncode)
+        return tool_stderr_value
 
     def process_patch_list(self, patch_files):
         patch_info = ""
@@ -183,8 +203,12 @@ class ISA_CVEChecker:
                 if (patch1[0] == patch):
                     continue
             patchstripped = patch1[2].split('-')
-            patch_info += " CVE-" + \
-                patchstripped[1] + "-" + re.findall('\d+', patchstripped[2])[0]
+            try:
+                patch_info += " CVE-" + \
+                    patchstripped[1] + "-" + re.findall('\d+', patchstripped[2])[0]
+            except IndexError:
+                # string parsing attempt failed, so just skip this patch
+               continue
         return patch_info
 
 # ======== supported callbacks from ISA ============= #

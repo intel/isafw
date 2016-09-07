@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import subprocess
-import os
+import os, sys
 
 LicenseChecker = None
 
@@ -93,7 +93,7 @@ class ISA_LicenseChecker():
                                 self.initialized = False
                                 with open(self.logfile, 'a') as flog:
                                     flog.write(
-                                        "Error in executing rpm query: " + sys.exc_info())
+                                        "Error in executing rpm query: " + str(sys.exc_info()))
                                     flog.write(
                                         "\nNot able to process package: " + ISA_pkg.name)
                                 return
@@ -136,13 +136,16 @@ class ISA_LicenseChecker():
             with open(self.image_pkg_list, 'r') as finput:
                 for line in finput:
                     line = line.strip()
+                    if not line:
+                        continue
                     if line.startswith("Packages "):
                         img_name = line.split()[3]
                         with open(self.logfile, 'a') as flog:
                             flog.write("img_name: " + img_name + "\n")
                         continue
-                    pkg_name = line.split()[0]
-                    orig_pkg_name = line.split()[2]
+                    package_info = line.split()
+                    pkg_name = package_info[0]
+                    orig_pkg_name = package_info[2]
                     if (not self.image_pkgs) or ((pkg_name + " from " + img_name) not in self.image_pkgs):
                         self.image_pkgs.append(pkg_name + " from " + img_name + " " + orig_pkg_name)
 

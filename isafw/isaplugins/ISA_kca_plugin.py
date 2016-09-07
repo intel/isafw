@@ -25,7 +25,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import importlib
 
 try:
     from lxml import etree
@@ -34,6 +33,7 @@ except ImportError:
         import xml.etree.cElementTree as etree
     except ImportError:
         import xml.etree.ElementTree as etree
+import importlib
 
 KCAnalyzer = None
 
@@ -54,6 +54,14 @@ class ISA_KernelChecker():
         with open(self.logfile, 'w') as flog:
             flog.write("\nPlugin ISA_KernelChecker initialized!\n")
 
+    def append_recommendation(self, report, key, value):
+        report.write("Recommended value:\n")
+        report.write(key + ' : ' + str(value) + '\n')
+        comment = self.comments.get(key, '')
+        if comment != '':
+            report.write("Comment:\n")
+            report.write(comment + '\n')
+
     def process_kernel(self, ISA_kernel):
         if (self.initialized):
             if (ISA_kernel.img_name and ISA_kernel.path_to_config):
@@ -65,7 +73,6 @@ class ISA_KernelChecker():
                           "hardening_kco_ref", "keys_kco_ref", "security_kco_ref", "integrity_kco_ref",
                           "comments"]:
                     setattr(self, c, merge_config(getattr(arch_config_module, c), getattr(common_config_module, c)))
-
                 with open(self.logfile, 'a') as flog:
                     flog.write("Analyzing kernel config file at: " + ISA_kernel.path_to_config +
                                " for the image: " + ISA_kernel.img_name + "\n")
@@ -128,106 +135,9 @@ class ISA_KernelChecker():
                     freport.write(
                         key + ' : ' + str(self.integrity_kco[key]) + '\n')
 
-    def append_recommendation(self, report, key, value):
-        report.write("Recommended value:\n")
-        report.write(key + ' : ' + str(value) + '\n')
-        comment = self.comments.get(key, '')
-        if comment != '':
-            report.write("Comment:\n")
-            report.write(comment + '\n')
-
     def write_problems_report(self, ISA_kernel):
         self.write_text_problems_report(ISA_kernel)
         self.write_xml_problems_report(ISA_kernel)
-
-    def write_xml_problems_report(self, ISA_kernel):
-        num_tests = len(self.hardening_kco) + len(self.keys_kco) + \
-                    len(self.security_kco) + len(self.integrity_kco)
-        root = etree.Element(
-            'testsuite', name='KCA_Plugin', tests=str(num_tests))
-        for key in sorted(self.hardening_kco):
-            tcase1 = etree.SubElement(
-                root, 'testcase', classname='Hardening options', name=key)
-            if (self.hardening_kco[key] != self.hardening_kco_ref[key]):
-                valid = False
-                if (key == "CONFIG_CMDLINE"):
-                    if (len(self.hardening_kco['CONFIG_CMDLINE']) > 0):
-                        valid = True
-                if (key == "CONFIG_DEBUG_STRICT_USER_COPY_CHECKS"):
-                    if (self.hardening_kco['CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS'] == 'y'):
-                        valid = True
-                if (key == "CONFIG_RANDOMIZE_BASE_MAX_OFFSET"):
-                    options = self.hardening_kco_ref[key].split(',')
-                    for option in options:
-                        if (option == self.hardening_kco[key]):
-                            valid = True
-                            break
-                if not valid:
-                    msg1 = 'current=' + key + ' is ' + \
-                           str(self.hardening_kco[
-                                   key]) + ', recommended=' + key + ' is ' + str(self.hardening_kco_ref[key])
-                    etree.SubElement(
-                        tcase1, 'failure', message=msg1, type='violation')
-        for key in sorted(self.keys_kco):
-            tcase2 = etree.SubElement(
-                root, 'testcase', classname='Key-related options', name=key)
-            if (self.keys_kco[key] != self.keys_kco_ref[key]):
-                msg2 = 'current=' + key + ' is ' + \
-                       str(self.keys_kco[key] + ', recommended=' +
-                           key + ' is ' + str(self.keys_kco_ref[key]))
-                etree.SubElement(
-                    tcase2, 'failure', message=msg2, type='violation')
-        for key in sorted(self.security_kco):
-            tcase3 = etree.SubElement(
-                root, 'testcase', classname='Security options', name=key)
-            if (self.security_kco[key] != self.security_kco_ref[key]):
-                valid = False
-                if (key == "CONFIG_DEFAULT_SECURITY"):
-                    options = self.security_kco_ref[key].split(',')
-                    for option in options:
-                        if (option == self.security_kco[key]):
-                            valid = True
-                            break
-                if ((key == "CONFIG_SECURITY_SELINUX") or
-                        (key == "CONFIG_SECURITY_SMACK") or
-                        (key == "CONFIG_SECURITY_APPARMOR") or
-                        (key == "CONFIG_SECURITY_TOMOYO")):
-                    if ((self.security_kco['CONFIG_SECURITY_SELINUX'] == 'y') or
-                            (self.security_kco['CONFIG_SECURITY_SMACK'] == 'y') or
-                            (self.security_kco['CONFIG_SECURITY_APPARMOR'] == 'y') or
-                            (self.security_kco['CONFIG_SECURITY_TOMOYO'] == 'y')):
-                        valid = True
-                if not valid:
-                    msg3 = 'current=' + key + ' is ' + \
-                           str(self.security_kco[key]) + ', recommended=' + \
-                           key + ' is ' + str(self.security_kco_ref[key])
-                    etree.SubElement(
-                        tcase3, 'failure', message=msg3, type='violation')
-        for key in sorted(self.integrity_kco):
-            tcase4 = etree.SubElement(
-                root, 'testcase', classname='Integrity options', name=key)
-            if (self.integrity_kco[key] != self.integrity_kco_ref[key]):
-                valid = False
-                if ((key == "CONFIG_IMA_DEFAULT_HASH_SHA1") or
-                        (key == "CONFIG_IMA_DEFAULT_HASH_SHA256") or
-                        (key == "CONFIG_IMA_DEFAULT_HASH_SHA512") or
-                        (key == "CONFIG_IMA_DEFAULT_HASH_WP512")):
-                    if ((self.integrity_kco['CONFIG_IMA_DEFAULT_HASH_SHA256'] == 'y') or
-                            (self.integrity_kco['CONFIG_IMA_DEFAULT_HASH_SHA512'] == 'y')):
-                        valid = True
-                if not valid:
-                    msg4 = 'current=' + key + ' is ' + \
-                           str(self.integrity_kco[
-                                   key]) + ', recommended=' + key + ' is ' + str(self.integrity_kco_ref[key])
-                    etree.SubElement(
-                        tcase4, 'failure', message=msg4, type='violation')
-        tree = etree.ElementTree(root)
-        output = self.problems_report_name + "_" + ISA_kernel.img_name + '.xml'
-        try:
-            tree.write(output, encoding='UTF-8',
-                       pretty_print=True, xml_declaration=True)
-        except TypeError:
-            tree.write(output, encoding='UTF-8', xml_declaration=True)
 
     def write_text_problems_report(self, ISA_kernel):
         with open(self.problems_report_name + "_" + ISA_kernel.img_name, 'w') as freport:
@@ -302,6 +212,96 @@ class ISA_KernelChecker():
                             key + ' : ' + str(self.integrity_kco[key]) + '\n')
                         self.append_recommendation(freport, key, self.integrity_kco_ref[key])
 
+    def write_xml_problems_report(self, ISA_kernel):
+        # write_problems_report_xml
+        num_tests = len(self.hardening_kco) + len(self.keys_kco) + \
+            len(self.security_kco) + len(self.integrity_kco)
+        root = etree.Element(
+            'testsuite', name='KCA_Plugin', tests=str(num_tests))
+        for key in sorted(self.hardening_kco):
+            tcase1 = etree.SubElement(
+                root, 'testcase', classname='Hardening options', name=key)
+            if (self.hardening_kco[key] != self.hardening_kco_ref[key]):
+                valid = False
+                if (key == "CONFIG_CMDLINE"):
+                    if (len(self.hardening_kco['CONFIG_CMDLINE']) > 0):
+                        valid = True
+                if (key == "CONFIG_DEBUG_STRICT_USER_COPY_CHECKS"):
+                    if (self.hardening_kco['CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS'] == 'y'):
+                        valid = True
+                if (key == "CONFIG_RANDOMIZE_BASE_MAX_OFFSET"):
+                    options = self.hardening_kco_ref[key].split(',')
+                    for option in options:
+                        if (option == self.hardening_kco[key]):
+                            valid = True
+                            break
+                if not valid:
+                    msg1 = 'current=' + key + ' is ' + \
+                        str(self.hardening_kco[
+                            key]) + ', recommended=' + key + ' is ' + str(self.hardening_kco_ref[key])
+                    etree.SubElement(
+                        tcase1, 'failure', message=msg1, type='violation')
+        for key in sorted(self.keys_kco):
+            tcase2 = etree.SubElement(
+                root, 'testcase', classname='Key-related options', name=key)
+            if (self.keys_kco[key] != self.keys_kco_ref[key]):
+                msg2 = 'current=' + key + ' is ' + \
+                    str(self.keys_kco[key] + ', recommended=' +
+                        key + ' is ' + str(self.keys_kco_ref[key]))
+                etree.SubElement(
+                    tcase2, 'failure', message=msg2, type='violation')
+        for key in sorted(self.security_kco):
+            tcase3 = etree.SubElement(
+                root, 'testcase', classname='Security options', name=key)
+            if (self.security_kco[key] != self.security_kco_ref[key]):
+                valid = False
+                if (key == "CONFIG_DEFAULT_SECURITY"):
+                    options = self.security_kco_ref[key].split(',')
+                    for option in options:
+                        if (option == self.security_kco[key]):
+                            valid = True
+                            break
+                if ((key == "CONFIG_SECURITY_SELINUX") or
+                        (key == "CONFIG_SECURITY_SMACK") or
+                        (key == "CONFIG_SECURITY_APPARMOR") or
+                        (key == "CONFIG_SECURITY_TOMOYO")):
+                    if ((self.security_kco['CONFIG_SECURITY_SELINUX'] == 'y') or
+                            (self.security_kco['CONFIG_SECURITY_SMACK'] == 'y') or
+                            (self.security_kco['CONFIG_SECURITY_APPARMOR'] == 'y') or
+                            (self.security_kco['CONFIG_SECURITY_TOMOYO'] == 'y')):
+                        valid = True
+                if not valid:
+                    msg3 = 'current=' + key + ' is ' + \
+                        str(self.security_kco[key]) + ', recommended=' + \
+                        key + ' is ' + str(self.security_kco_ref[key])
+                    etree.SubElement(
+                        tcase3, 'failure', message=msg3, type='violation')
+        for key in sorted(self.integrity_kco):
+            tcase4 = etree.SubElement(
+                root, 'testcase', classname='Integrity options', name=key)
+            if (self.integrity_kco[key] != self.integrity_kco_ref[key]):
+                valid = False
+                if ((key == "CONFIG_IMA_DEFAULT_HASH_SHA1") or
+                        (key == "CONFIG_IMA_DEFAULT_HASH_SHA256") or
+                        (key == "CONFIG_IMA_DEFAULT_HASH_SHA512") or
+                        (key == "CONFIG_IMA_DEFAULT_HASH_WP512")):
+                    if ((self.integrity_kco['CONFIG_IMA_DEFAULT_HASH_SHA256'] == 'y') or
+                            (self.integrity_kco['CONFIG_IMA_DEFAULT_HASH_SHA512'] == 'y')):
+                        valid = True
+                if not valid:
+                    msg4 = 'current=' + key + ' is ' + \
+                        str(self.integrity_kco[
+                            key]) + ', recommended=' + key + ' is ' + str(self.integrity_kco_ref[key])
+                    etree.SubElement(
+                        tcase4, 'failure', message=msg4, type='violation')
+        tree = etree.ElementTree(root)
+        output = self.problems_report_name + "_" + ISA_kernel.img_name + '.xml'
+        try:
+            tree.write(output, encoding='UTF-8',
+                       pretty_print=True, xml_declaration=True)
+        except TypeError:
+            tree.write(output, encoding='UTF-8', xml_declaration=True)
+
 
 def merge_config(arch_kco, common_kco):
     merged = arch_kco.copy()
@@ -309,7 +309,6 @@ def merge_config(arch_kco, common_kco):
     return merged
 
 # ======== supported callbacks from ISA ============= #
-
 def init(ISA_config):
     global KCAnalyzer
     KCAnalyzer = ISA_KernelChecker(ISA_config)
