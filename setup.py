@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(name='isafw',
       version='0.1',
@@ -8,7 +8,7 @@ setup(name='isafw',
       author='Elena Reshetova',
       author_email='elena.reshetova@intel.com',
       url='http://github.com/otcshare/isafw',
-      packages=['isafw', 'isaplugins'],
+      packages=find_packages(),
       package_dir={'isaplugins': 'isafw/isaplugins'},
-      package_data={'isaplugins': ['configs/la/*', 'configs/kca/*']},
+      package_data={'isafw': ['isaplugins/configs/la/*']},
      )
