@@ -10,5 +10,5 @@ setup(name='isafw',
       url='http://github.com/otcshare/isafw',
       packages=['isafw', 'isaplugins'],
       package_dir={'isaplugins': 'isafw/isaplugins'},
-      package_data={'isaplugins': ['configs/la/*']},
+      package_data={'isaplugins': ['configs/la/*', 'configs/kca/*']},
      )
